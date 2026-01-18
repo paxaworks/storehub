@@ -1,0 +1,391 @@
+@import "tailwindcss";
+
+/* Premium Theme Variables */
+:root {
+  --primary: #6366f1;
+  --primary-dark: #4f46e5;
+  --secondary: #8b5cf6;
+  --accent: #f59e0b;
+  --success: #10b981;
+  --danger: #ef4444;
+  --warning: #f59e0b;
+}
+
+/* Dark Mode */
+.dark {
+  --bg-primary: #0f172a;
+  --bg-secondary: #1e293b;
+  --bg-card: #1e293b;
+  --text-primary: #f8fafc;
+  --text-secondary: #94a3b8;
+  --border: #334155;
+}
+
+/* Light Mode - 완전히 새로 디자인 */
+.light {
+  --bg-primary: #f8fafc;
+  --bg-secondary: #ffffff;
+  --bg-card: #ffffff;
+  --text-primary: #1e293b;
+  --text-secondary: #64748b;
+  --border: #e2e8f0;
+}
+
+* {
+  transition: background-color 0.2s ease, border-color 0.2s ease, color 0.2s ease;
+}
+
+/* Scrollbar - Light mode */
+.light::-webkit-scrollbar-thumb { background: #cbd5e1; }
+.light::-webkit-scrollbar-thumb:hover { background: #94a3b8; }
+
+/* Scrollbar - Dark mode */
+::-webkit-scrollbar { width: 6px; height: 6px; }
+::-webkit-scrollbar-track { background: transparent; }
+::-webkit-scrollbar-thumb { background: #475569; border-radius: 3px; }
+::-webkit-scrollbar-thumb:hover { background: #64748b; }
+
+/* Animations */
+@keyframes fadeIn {
+  from { opacity: 0; transform: translateY(8px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+.fade-in { animation: fadeIn 0.3s ease-out; }
+
+/* Card Effects */
+.card-hover {
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+.card-hover:hover {
+  transform: translateY(-2px);
+}
+.dark .card-hover:hover {
+  box-shadow: 0 12px 24px -8px rgba(0, 0, 0, 0.4);
+}
+.light .card-hover:hover {
+  box-shadow: 0 12px 24px -8px rgba(0, 0, 0, 0.1);
+}
+
+/* Gradients */
+.gradient-primary { background: linear-gradient(135deg, #6366f1 0%, #8b5cf6 100%); }
+.gradient-success { background: linear-gradient(135deg, #10b981 0%, #059669 100%); }
+.gradient-warning { background: linear-gradient(135deg, #f59e0b 0%, #d97706 100%); }
+.gradient-danger { background: linear-gradient(135deg, #ef4444 0%, #dc2626 100%); }
+
+/* ========== Light Mode 전용 스타일 ========== */
+
+/* 라이트모드 - 사이드바 */
+.light aside {
+  background: #ffffff !important;
+  border-color: #e2e8f0 !important;
+}
+
+.light aside h1,
+.light aside .text-white {
+  color: #1e293b !important;
+}
+
+.light aside .text-slate-400,
+.light aside .text-slate-500 {
+  color: #64748b !important;
+}
+
+.light aside button:hover {
+  background: #f1f5f9 !important;
+}
+
+.light aside .bg-indigo-500\/20 {
+  background: rgba(99, 102, 241, 0.1) !important;
+}
+
+/* 라이트모드 - 헤더 */
+.light header {
+  background: rgba(255, 255, 255, 0.95) !important;
+  border-color: #e2e8f0 !important;
+}
+
+.light header .text-white {
+  color: #1e293b !important;
+}
+
+/* 라이트모드 - 메인 콘텐츠 */
+.light main {
+  background: #f8fafc;
+}
+
+.light main .text-white {
+  color: #1e293b !important;
+}
+
+.light main .text-slate-400 {
+  color: #64748b !important;
+}
+
+.light main .text-slate-500 {
+  color: #94a3b8 !important;
+}
+
+.light main .text-slate-300 {
+  color: #475569 !important;
+}
+
+/* 라이트모드 - 카드 */
+.light .bg-slate-800\/50 {
+  background: #ffffff !important;
+  border-color: #e2e8f0 !important;
+  box-shadow: 0 1px 3px rgba(0, 0, 0, 0.05);
+}
+
+.light .bg-slate-900\/50 {
+  background: #f8fafc !important;
+}
+
+.light .border-slate-700\/50,
+.light .border-slate-700 {
+  border-color: #e2e8f0 !important;
+}
+
+.light .border-slate-800 {
+  border-color: #e2e8f0 !important;
+}
+
+/* 라이트모드 - 테이블 */
+.light table th {
+  background: #f8fafc !important;
+  color: #64748b !important;
+}
+
+.light table tr:hover td {
+  background: #f8fafc !important;
+}
+
+/* 라이트모드 - 입력 필드 */
+.light input,
+.light select {
+  background: #f8fafc !important;
+  border-color: #e2e8f0 !important;
+  color: #1e293b !important;
+}
+
+.light input::placeholder {
+  color: #94a3b8 !important;
+}
+
+.light input:focus,
+.light select:focus {
+  border-color: #6366f1 !important;
+  background: #ffffff !important;
+}
+
+/* 라이트모드 - 버튼 */
+.light .bg-slate-700 {
+  background: #e2e8f0 !important;
+  color: #1e293b !important;
+}
+
+.light .bg-slate-700:hover {
+  background: #cbd5e1 !important;
+}
+
+.light .hover\:bg-slate-700:hover {
+  background: #f1f5f9 !important;
+}
+
+.light .hover\:bg-slate-800:hover {
+  background: #f1f5f9 !important;
+}
+
+.light .bg-slate-800\/50 {
+  background: #ffffff !important;
+}
+
+/* 라이트모드 - 모달 */
+.light .bg-slate-800 {
+  background: #ffffff !important;
+}
+
+.light .bg-black\/60 {
+  background: rgba(0, 0, 0, 0.4) !important;
+}
+
+/* 라이트모드 - 알림 박스 */
+.light .bg-amber-500\/10 {
+  background: rgba(245, 158, 11, 0.1) !important;
+}
+
+.light .bg-emerald-500\/10 {
+  background: rgba(16, 185, 129, 0.1) !important;
+}
+
+.light .bg-indigo-500\/10 {
+  background: rgba(99, 102, 241, 0.08) !important;
+}
+
+/* 라이트모드 - 뱃지 */
+.light .text-amber-200 {
+  color: #b45309 !important;
+}
+
+.light .text-emerald-200 {
+  color: #047857 !important;
+}
+
+/* 라이트모드 - 차트 툴팁 */
+.light .recharts-tooltip-wrapper .bg-slate-800 {
+  background: #ffffff !important;
+  border-color: #e2e8f0 !important;
+  box-shadow: 0 4px 12px rgba(0, 0, 0, 0.1) !important;
+}
+
+/* 라이트모드 - 사이드바 유저 정보 */
+.light .bg-slate-800\/50 .text-white {
+  color: #1e293b !important;
+}
+
+/* 라이트모드 - 오버레이 */
+.light .bg-black\/50 {
+  background: rgba(0, 0, 0, 0.3) !important;
+}
+
+/* 라이트모드 - 하단 네비게이션 */
+.light nav.fixed.bottom-0 {
+  background: rgba(255, 255, 255, 0.95) !important;
+  border-color: #e2e8f0 !important;
+}
+
+.light nav.fixed.bottom-0 .text-slate-500 {
+  color: #94a3b8 !important;
+}
+
+/* ========== 모바일 최적화 ========== */
+
+/* 터치 친화적 설정 */
+@media (max-width: 1024px) {
+  /* 버튼 크기 최소 44px (접근성 권장) */
+  button {
+    min-height: 44px;
+  }
+
+  /* 테이블 셀 터치 영역 확대 */
+  table td, table th {
+    padding: 12px 8px !important;
+  }
+
+  /* 모달 전체화면 */
+  .fixed.z-50 > div {
+    max-height: 95vh !important;
+    margin: 10px;
+  }
+
+  /* 스크롤 영역 터치 개선 */
+  .overflow-y-auto, .overflow-x-auto {
+    -webkit-overflow-scrolling: touch;
+  }
+
+  /* 입력 필드 크기 조정 (iOS 확대 방지) */
+  input, select, textarea {
+    font-size: 16px !important;
+  }
+}
+
+/* 작은 화면용 추가 최적화 */
+@media (max-width: 640px) {
+  /* StatCard 텍스트 조정 */
+  .text-2xl {
+    font-size: 1.25rem !important;
+  }
+
+  /* 차트 높이 조정 */
+  .h-72, .h-64, .h-48 {
+    height: 180px !important;
+  }
+
+  /* 테이블 폰트 크기 */
+  table {
+    font-size: 13px;
+  }
+
+  /* 페이지 제목 조정 */
+  h2.text-2xl {
+    font-size: 1.25rem !important;
+  }
+
+  /* 버튼 그룹 스택 */
+  .flex.gap-2.flex-wrap > button {
+    flex: 1 1 auto;
+    min-width: 100px;
+  }
+}
+
+/* iOS Safari safe area */
+@supports (padding: max(0px)) {
+  .fixed.bottom-0 {
+    padding-bottom: max(0px, env(safe-area-inset-bottom));
+  }
+
+  .pb-20 {
+    padding-bottom: max(5rem, calc(5rem + env(safe-area-inset-bottom)));
+  }
+}
+
+/* 터치 하이라이트 제거 */
+button, a, [role="button"] {
+  -webkit-tap-highlight-color: transparent;
+}
+
+/* 부드러운 스크롤 */
+html {
+  scroll-behavior: smooth;
+}
+
+/* 모바일 플로팅 버튼 그림자 */
+.fixed.bottom-20.right-4 {
+  box-shadow: 0 4px 20px rgba(99, 102, 241, 0.4);
+}
+
+/* ========== 토스트 & 알림 센터 애니메이션 ========== */
+
+/* 토스트 슬라이드 인 */
+@keyframes slideIn {
+  from {
+    transform: translateX(100%);
+    opacity: 0;
+  }
+  to {
+    transform: translateX(0);
+    opacity: 1;
+  }
+}
+
+.animate-slide-in {
+  animation: slideIn 0.3s ease-out;
+}
+
+/* 알림 센터 슬라이드 */
+@keyframes slideLeft {
+  from {
+    transform: translateX(100%);
+  }
+  to {
+    transform: translateX(0);
+  }
+}
+
+.animate-slide-left {
+  animation: slideLeft 0.3s ease-out;
+}
+
+/* 토스트 스타일 */
+.fixed.top-4.right-4 > div {
+  box-shadow: 0 10px 25px rgba(0, 0, 0, 0.3);
+}
+
+/* 라이트모드 알림 센터 */
+.light .bg-slate-900.border-l {
+  background: #ffffff !important;
+  border-color: #e2e8f0 !important;
+}
+
+.light .bg-slate-900.border-l .text-white {
+  color: #1e293b !important;
+}

@@ -1,0 +1,127 @@
+<!doctype html>
+<html lang="ko">
+  <head>
+    <meta charset="UTF-8" />
+    <meta name="viewport" content="width=device-width, initial-scale=1.0, maximum-scale=1.0, user-scalable=no" />
+
+    <!-- PWA 메타 태그 -->
+    <meta name="theme-color" content="#6366f1" />
+    <meta name="description" content="StoreHub - 카페 및 매장 통합 관리 솔루션" />
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+    <meta name="apple-mobile-web-app-status-bar-style" content="black-translucent" />
+    <meta name="apple-mobile-web-app-title" content="StoreHub" />
+
+    <!-- 파비콘 및 아이콘 -->
+    <link rel="icon" type="image/svg+xml" href="/icons/icon.svg" />
+    <link rel="apple-touch-icon" href="/icons/icon-192x192.png" />
+    <link rel="manifest" href="/manifest.json" />
+
+    <!-- iOS 스플래시 스크린 -->
+    <meta name="apple-mobile-web-app-capable" content="yes" />
+
+    <title>StoreHub - 매장 관리</title>
+
+    <style>
+      /* 앱 로딩 화면 */
+      #app-loader {
+        position: fixed;
+        top: 0;
+        left: 0;
+        right: 0;
+        bottom: 0;
+        background: linear-gradient(135deg, #0f172a 0%, #1e293b 100%);
+        display: flex;
+        flex-direction: column;
+        align-items: center;
+        justify-content: center;
+        z-index: 9999;
+        transition: opacity 0.3s ease;
+      }
+      #app-loader.hidden {
+        opacity: 0;
+        pointer-events: none;
+      }
+      #app-loader .logo {
+        width: 80px;
+        height: 80px;
+        background: linear-gradient(135deg, #6366f1, #8b5cf6);
+        border-radius: 20px;
+        display: flex;
+        align-items: center;
+        justify-content: center;
+        margin-bottom: 24px;
+        animation: pulse 2s infinite;
+      }
+      #app-loader .logo svg {
+        width: 48px;
+        height: 48px;
+        color: white;
+      }
+      #app-loader .text {
+        color: #94a3b8;
+        font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;
+        font-size: 14px;
+      }
+      @keyframes pulse {
+        0%, 100% { transform: scale(1); }
+        50% { transform: scale(1.05); }
+      }
+    </style>
+  </head>
+  <body>
+    <!-- 앱 로딩 화면 -->
+    <div id="app-loader">
+      <div class="logo">
+        <svg fill="none" stroke="currentColor" viewBox="0 0 24 24">
+          <path stroke-linecap="round" stroke-linejoin="round" stroke-width="2" d="M13 10V3L4 14h7v7l9-11h-7z"/>
+        </svg>
+      </div>
+      <div class="text">로딩 중...</div>
+    </div>
+
+    <div id="root"></div>
+
+    <script type="module" src="/src/main.jsx"></script>
+
+    <!-- 서비스 워커 등록 -->
+    <script>
+      // 로딩 화면 숨기기
+      window.addEventListener('load', () => {
+        setTimeout(() => {
+          const loader = document.getElementById('app-loader');
+          if (loader) loader.classList.add('hidden');
+        }, 500);
+      });
+
+      // 서비스 워커 등록
+      if ('serviceWorker' in navigator) {
+        window.addEventListener('load', () => {
+          navigator.serviceWorker.register('/sw.js')
+            .then((registration) => {
+              console.log('SW 등록 성공:', registration.scope);
+            })
+            .catch((error) => {
+              console.log('SW 등록 실패:', error);
+            });
+        });
+      }
+
+      // 오프라인 감지
+      window.addEventListener('online', () => {
+        console.log('온라인 상태로 전환됨');
+      });
+
+      window.addEventListener('offline', () => {
+        console.log('오프라인 상태로 전환됨');
+      });
+
+      // PWA 설치 프롬프트
+      let deferredPrompt;
+      window.addEventListener('beforeinstallprompt', (e) => {
+        e.preventDefault();
+        deferredPrompt = e;
+        window.deferredPrompt = deferredPrompt;
+      });
+    </script>
+  </body>
+</html>
