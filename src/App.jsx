@@ -1619,7 +1619,7 @@ function Dashboard() {
                 <tr key={item.id} className="border-b border-slate-700/50 hover:bg-slate-700/20">
                   <td className="py-3 px-4 text-white font-medium">{item.name}</td>
                   <td className="py-3 px-4 text-slate-400">{item.category}</td>
-                  <td className="py-3 px-4 text-right text-white">{item.quantity}{item.unit}</td>
+                  <td className="py-3 px-4 text-right text-white">{Math.round(item.quantity)}{item.unit}</td>
                   <td className="py-3 px-4 text-right text-slate-400">{item.minStock}{item.unit}</td>
                   <td className="py-3 px-4 text-right text-slate-300">{formatNumber(item.price)}원</td>
                   <td className="py-3 px-4 text-center"><Badge variant={item.quantity <= item.minStock ? 'danger' : item.quantity <= item.minStock * 1.5 ? 'warning' : 'success'}>{item.quantity <= item.minStock ? '부족' : item.quantity <= item.minStock * 1.5 ? '주의' : '정상'}</Badge></td>
@@ -2382,15 +2382,15 @@ function Dashboard() {
 
       {/* 모달들 */}
       <Modal isOpen={showModal === 'inventory'} onClose={() => { setShowModal(null); setEditItem(null); }} title={editItem ? '재고 수정' : '재고 추가'}>
-        <form onSubmit={e => { e.preventDefault(); const f = new FormData(e.target); handleFormSubmit('inventory', { name: f.get('name'), category: f.get('category'), quantity: Number(f.get('quantity')), minStock: Number(f.get('minStock')), unit: f.get('unit'), price: Number(f.get('price')) }); }} className="space-y-4">
+        <form onSubmit={e => { e.preventDefault(); const f = new FormData(e.target); handleFormSubmit('inventory', { name: f.get('name'), category: f.get('category'), quantity: Math.round(Number(f.get('quantity'))), minStock: Math.round(Number(f.get('minStock'))), unit: f.get('unit'), price: Math.round(Number(f.get('price'))) }); }} className="space-y-4">
           <Input name="name" label="품목명" defaultValue={editItem?.name} required />
           <SelectWithCustom name="category" label="카테고리" defaultValue={editItem?.category || '원두'} options={[{ value: '원두', label: '원두' }, { value: '유제품', label: '유제품' }, { value: '시럽', label: '시럽' }, { value: '포장재', label: '포장재' }]} placeholder="카테고리 입력..." />
           <div className="grid grid-cols-2 gap-4">
-            <Input name="quantity" label="수량" type="number" defaultValue={editItem?.quantity || 0} required />
+            <Input name="quantity" label="수량" type="number" step="1" defaultValue={editItem?.quantity ? Math.round(editItem.quantity) : 0} required />
             <Input name="unit" label="단위" defaultValue={editItem?.unit || '개'} required />
           </div>
           <div className="grid grid-cols-2 gap-4">
-            <Input name="minStock" label="최소재고" type="number" defaultValue={editItem?.minStock || 0} required />
+            <Input name="minStock" label="최소재고" type="number" step="1" defaultValue={editItem?.minStock ? Math.round(editItem.minStock) : 0} required />
             <Input name="price" label="단가" type="number" defaultValue={editItem?.price || 0} required />
           </div>
           <div className="flex gap-3 pt-4">
