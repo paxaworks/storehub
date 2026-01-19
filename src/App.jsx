@@ -453,6 +453,108 @@ const BulkScheduleModal = ({ isOpen, onClose, staff, scheduleData, setScheduleDa
   );
 };
 
+// 메뉴 추가/수정 모달 (재고 연결 기능 포함)
+const MenuModal = ({ isOpen, onClose, onSubmit, editItem, inventory }) => {
+  const [ingredients, setIngredients] = useState(editItem?.ingredients || []);
+
+  useEffect(() => {
+    setIngredients(editItem?.ingredients || []);
+  }, [editItem]);
+
+  const addIngredient = () => {
+    setIngredients([...ingredients, { inventoryId: '', amount: 1 }]);
+  };
+
+  const updateIngredient = (index, field, value) => {
+    const updated = [...ingredients];
+    updated[index][field] = field === 'amount' ? Number(value) : value;
+    setIngredients(updated);
+  };
+
+  const removeIngredient = (index) => {
+    setIngredients(ingredients.filter((_, i) => i !== index));
+  };
+
+  const handleSubmit = (e) => {
+    e.preventDefault();
+    const f = new FormData(e.target);
+    // 유효한 재료만 필터링 (재고가 선택된 것만)
+    const validIngredients = ingredients.filter(ing => ing.inventoryId && ing.amount > 0);
+    onSubmit({
+      name: f.get('name'),
+      category: f.get('category'),
+      price: Math.round(Number(f.get('price'))),
+      cost: Math.round(Number(f.get('cost'))),
+      ingredients: validIngredients
+    });
+  };
+
+  if (!isOpen) return null;
+
+  const safeInventory = Array.isArray(inventory) ? inventory : [];
+
+  return (
+    <Modal isOpen={isOpen} onClose={onClose} title={editItem ? '메뉴 수정' : '메뉴 추가'}>
+      <form onSubmit={handleSubmit} className="space-y-4">
+        <Input name="name" label="메뉴명" defaultValue={editItem?.name} required />
+        <SelectWithCustom name="category" label="카테고리" defaultValue={editItem?.category || '커피'} options={[{ value: '커피', label: '커피' }, { value: '음료', label: '음료' }, { value: '베이커리', label: '베이커리' }, { value: '디저트', label: '디저트' }]} placeholder="카테고리 입력..." />
+        <div className="grid grid-cols-2 gap-4">
+          <Input name="price" label="판매가" type="number" step="1" defaultValue={editItem?.price ? Math.round(editItem.price) : 0} required />
+          <Input name="cost" label="원가" type="number" step="1" defaultValue={editItem?.cost ? Math.round(editItem.cost) : 0} required />
+        </div>
+
+        {/* 재고 연결 */}
+        <div>
+          <div className="flex items-center justify-between mb-2">
+            <label className="block text-sm text-slate-400">재고 연결 (판매 시 자동 차감)</label>
+            <button type="button" onClick={addIngredient} className="text-xs text-indigo-400 hover:text-indigo-300">+ 재고 추가</button>
+          </div>
+          {ingredients.length === 0 ? (
+            <p className="text-slate-500 text-sm py-3 text-center bg-slate-900/50 rounded-lg">연결된 재고가 없습니다</p>
+          ) : (
+            <div className="space-y-2">
+              {ingredients.map((ing, idx) => {
+                const selectedInv = safeInventory.find(inv => inv.id === ing.inventoryId);
+                return (
+                  <div key={idx} className="flex items-center gap-2 p-2 bg-slate-900/50 rounded-lg">
+                    <select
+                      value={ing.inventoryId}
+                      onChange={(e) => updateIngredient(idx, 'inventoryId', e.target.value)}
+                      className="flex-1 bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-white text-sm"
+                    >
+                      <option value="">재고 선택</option>
+                      {safeInventory.map(inv => (
+                        <option key={inv.id} value={inv.id}>{inv.name} ({inv.quantity}{inv.unit})</option>
+                      ))}
+                    </select>
+                    <input
+                      type="number"
+                      value={ing.amount}
+                      onChange={(e) => updateIngredient(idx, 'amount', e.target.value)}
+                      className="w-20 bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-white text-sm text-center"
+                      min="0.01"
+                      step="0.01"
+                    />
+                    <span className="text-slate-400 text-sm w-8">{selectedInv?.unit || ''}</span>
+                    <button type="button" onClick={() => removeIngredient(idx)} className="text-red-400 hover:text-red-300 p-1">
+                      <X className="w-4 h-4" />
+                    </button>
+                  </div>
+                );
+              })}
+            </div>
+          )}
+        </div>
+
+        <div className="flex gap-3 pt-4">
+          <Button type="button" variant="secondary" className="flex-1" onClick={onClose}>취소</Button>
+          <Button type="submit" className="flex-1">{editItem ? '수정' : '추가'}</Button>
+        </div>
+      </form>
+    </Modal>
+  );
+};
+
 // 매출 입력 모달 (개선됨)
 const SalesInputModal = ({ isOpen, onClose, onSubmit, menu }) => {
   const [items, setItems] = useState([]);
@@ -1138,48 +1240,38 @@ function Dashboard() {
       }));
     }
 
-    // 재고 자동 차감 (메뉴-재고 연동)
-    if (Array.isArray(inventory)) {
+    // 재고 자동 차감 (메뉴의 ingredients 기반)
+    if (Array.isArray(inventory) && Array.isArray(menu)) {
       const updatedInventory = [...inventory];
+      const lowStockItems = [];
 
       sale.items.forEach(soldItem => {
-        // 커피류: 원두 차감 (1잔당 20g = 0.02kg)
-        if (soldItem.category === '커피') {
-          const beanIdx = updatedInventory.findIndex(i => i.category === '원두');
-          if (beanIdx !== -1) {
-            updatedInventory[beanIdx] = {
-              ...updatedInventory[beanIdx],
-              quantity: Math.max(0, updatedInventory[beanIdx].quantity - (0.02 * soldItem.qty))
-            };
-          }
-        }
-
-        // 라떼류: 우유 차감 (1잔당 1개 = 200ml 기준)
-        if (soldItem.name?.includes('라떼') || soldItem.name?.includes('라테')) {
-          const milkIdx = updatedInventory.findIndex(i => i.category === '유제품');
-          if (milkIdx !== -1) {
-            updatedInventory[milkIdx] = {
-              ...updatedInventory[milkIdx],
-              quantity: Math.max(0, updatedInventory[milkIdx].quantity - (0.2 * soldItem.qty))
-            };
-          }
-        }
-
-        // 테이크아웃컵 차감
-        const cupIdx = updatedInventory.findIndex(i => i.name?.includes('컵') || i.name?.includes('cup'));
-        if (cupIdx !== -1) {
-          updatedInventory[cupIdx] = {
-            ...updatedInventory[cupIdx],
-            quantity: Math.max(0, updatedInventory[cupIdx].quantity - soldItem.qty)
-          };
+        // 메뉴에서 연결된 재고(ingredients) 정보 가져오기
+        const menuItem = menu.find(m => m.id === soldItem.id);
+        if (menuItem?.ingredients && Array.isArray(menuItem.ingredients)) {
+          menuItem.ingredients.forEach(ing => {
+            const invIdx = updatedInventory.findIndex(i => i.id === ing.inventoryId);
+            if (invIdx !== -1) {
+              const deductAmount = ing.amount * soldItem.qty;
+              updatedInventory[invIdx] = {
+                ...updatedInventory[invIdx],
+                quantity: Math.max(0, Number((updatedInventory[invIdx].quantity - deductAmount).toFixed(2)))
+              };
+              // 재고 부족 체크
+              if (updatedInventory[invIdx].quantity <= updatedInventory[invIdx].minStock) {
+                lowStockItems.push(updatedInventory[invIdx]);
+              }
+            }
+          });
         }
       });
 
       await setInventory(updatedInventory);
 
-      // 재고 부족 알림
-      updatedInventory.filter(i => i.quantity <= i.minStock).forEach(item => {
-        addToast(`${item.name} 재고 부족! (${item.quantity.toFixed(1)}${item.unit})`, 'warning');
+      // 재고 부족 알림 (중복 제거)
+      const uniqueLowStock = [...new Map(lowStockItems.map(item => [item.id, item])).values()];
+      uniqueLowStock.forEach(item => {
+        addToast(`${item.name} 재고 부족! (${Number(item.quantity.toFixed(2))}${item.unit})`, 'warning');
       });
     }
 
@@ -2562,20 +2654,13 @@ function Dashboard() {
         </form>
       </Modal>
 
-      <Modal isOpen={showModal === 'menu'} onClose={() => { setShowModal(null); setEditItem(null); }} title={editItem ? '메뉴 수정' : '메뉴 추가'}>
-        <form onSubmit={e => { e.preventDefault(); const f = new FormData(e.target); handleFormSubmit('menu', { name: f.get('name'), category: f.get('category'), price: Math.round(Number(f.get('price'))), cost: Math.round(Number(f.get('cost'))) }); }} className="space-y-4">
-          <Input name="name" label="메뉴명" defaultValue={editItem?.name} required />
-          <SelectWithCustom name="category" label="카테고리" defaultValue={editItem?.category || '커피'} options={[{ value: '커피', label: '커피' }, { value: '음료', label: '음료' }, { value: '베이커리', label: '베이커리' }, { value: '디저트', label: '디저트' }]} placeholder="카테고리 입력..." />
-          <div className="grid grid-cols-2 gap-4">
-            <Input name="price" label="판매가" type="number" step="1" defaultValue={editItem?.price ? Math.round(editItem.price) : 0} required />
-            <Input name="cost" label="원가" type="number" step="1" defaultValue={editItem?.cost ? Math.round(editItem.cost) : 0} required />
-          </div>
-          <div className="flex gap-3 pt-4">
-            <Button type="button" variant="secondary" className="flex-1" onClick={() => { setShowModal(null); setEditItem(null); }}>취소</Button>
-            <Button type="submit" className="flex-1">{editItem ? '수정' : '추가'}</Button>
-          </div>
-        </form>
-      </Modal>
+      <MenuModal
+        isOpen={showModal === 'menu'}
+        onClose={() => { setShowModal(null); setEditItem(null); }}
+        onSubmit={(data) => handleFormSubmit('menu', data)}
+        editItem={editItem}
+        inventory={inventory}
+      />
 
       <Modal isOpen={showModal === 'reservation'} onClose={() => { setShowModal(null); setEditItem(null); }} title={editItem ? '예약 수정' : '예약 추가'}>
         <form onSubmit={e => { e.preventDefault(); const f = new FormData(e.target); handleFormSubmit('reservation', { name: f.get('name'), phone: f.get('phone'), date: f.get('date'), time: f.get('time'), people: Math.round(Number(f.get('people'))), status: f.get('status'), note: f.get('note') }); }} className="space-y-4">
