@@ -319,6 +319,140 @@ const Button = ({ children, variant = 'primary', size = 'md', icon: Icon, ...pro
   );
 };
 
+// 일괄 스케줄 설정 모달
+const BulkScheduleModal = ({ isOpen, onClose, staff, scheduleData, setScheduleData, year, month }) => {
+  const [selectedStaff, setSelectedStaff] = useState(null);
+  const [selectedDays, setSelectedDays] = useState([]); // 선택된 요일들 (0=일, 1=월, ..., 6=토)
+
+  const dayNames = ['일', '월', '화', '수', '목', '금', '토'];
+
+  // 선택한 요일에 해당하는 이번 달 모든 날짜 구하기
+  const getDatesForDays = (days) => {
+    const dates = [];
+    const daysInMonth = new Date(year, month + 1, 0).getDate();
+    for (let d = 1; d <= daysInMonth; d++) {
+      const date = new Date(year, month, d);
+      if (days.includes(date.getDay())) {
+        dates.push(`${year}-${String(month + 1).padStart(2, '0')}-${String(d).padStart(2, '0')}`);
+      }
+    }
+    return dates;
+  };
+
+  const toggleDay = (dayIndex) => {
+    setSelectedDays(prev =>
+      prev.includes(dayIndex) ? prev.filter(d => d !== dayIndex) : [...prev, dayIndex]
+    );
+  };
+
+  const applySchedule = async () => {
+    if (!selectedStaff || selectedDays.length === 0) return;
+
+    const dates = getDatesForDays(selectedDays);
+    const newSchedule = { ...scheduleData };
+
+    dates.forEach(dateKey => {
+      if (!newSchedule[dateKey]) newSchedule[dateKey] = [];
+      if (!newSchedule[dateKey].includes(selectedStaff.id)) {
+        newSchedule[dateKey] = [...newSchedule[dateKey], selectedStaff.id];
+      }
+    });
+
+    await setScheduleData(newSchedule);
+    onClose();
+  };
+
+  const clearSchedule = async () => {
+    if (!selectedStaff || selectedDays.length === 0) return;
+
+    const dates = getDatesForDays(selectedDays);
+    const newSchedule = { ...scheduleData };
+
+    dates.forEach(dateKey => {
+      if (newSchedule[dateKey]) {
+        newSchedule[dateKey] = newSchedule[dateKey].filter(id => id !== selectedStaff.id);
+      }
+    });
+
+    await setScheduleData(newSchedule);
+    onClose();
+  };
+
+  if (!isOpen) return null;
+
+  return (
+    <Modal isOpen={isOpen} onClose={onClose} title={`${year}년 ${month + 1}월 일괄 스케줄 설정`}>
+      <div className="space-y-4">
+        {/* 직원 선택 */}
+        <div>
+          <label className="block text-sm text-slate-400 mb-2">직원 선택</label>
+          <div className="grid grid-cols-2 sm:grid-cols-3 gap-2">
+            {staff.map(s => (
+              <button
+                key={s.id}
+                onClick={() => setSelectedStaff(s)}
+                className={`p-3 rounded-lg text-left transition ${selectedStaff?.id === s.id ? 'bg-indigo-500/20 border-2 border-indigo-500' : 'bg-slate-900/50 border border-slate-700 hover:border-slate-600'}`}
+              >
+                <div className="flex items-center gap-2">
+                  <div className="w-8 h-8 rounded-full flex items-center justify-center text-white text-sm font-bold" style={{ background: s.color || '#6366f1' }}>
+                    {s.name?.charAt(0)}
+                  </div>
+                  <div>
+                    <p className="text-white text-sm font-medium">{s.name}</p>
+                    <p className="text-slate-500 text-xs">{s.role}</p>
+                  </div>
+                </div>
+              </button>
+            ))}
+          </div>
+        </div>
+
+        {/* 요일 선택 */}
+        <div>
+          <label className="block text-sm text-slate-400 mb-2">근무 요일 선택 (복수 선택 가능)</label>
+          <div className="flex gap-2 flex-wrap">
+            {dayNames.map((name, idx) => (
+              <button
+                key={idx}
+                onClick={() => toggleDay(idx)}
+                className={`w-12 h-12 rounded-lg font-medium transition ${selectedDays.includes(idx) ? 'bg-indigo-500 text-white' : 'bg-slate-900/50 border border-slate-700 text-slate-400 hover:border-slate-600'}`}
+                style={{ color: selectedDays.includes(idx) ? '#fff' : idx === 0 ? '#f87171' : idx === 6 ? '#60a5fa' : '#94a3b8' }}
+              >
+                {name}
+              </button>
+            ))}
+          </div>
+          {selectedDays.length > 0 && (
+            <p className="text-slate-500 text-sm mt-2">
+              선택된 요일: {selectedDays.sort((a,b) => a-b).map(d => dayNames[d]).join(', ')}
+              ({getDatesForDays(selectedDays).length}일)
+            </p>
+          )}
+        </div>
+
+        {/* 버튼 */}
+        <div className="flex gap-3 pt-4">
+          <Button
+            variant="secondary"
+            className="flex-1"
+            onClick={clearSchedule}
+            disabled={!selectedStaff || selectedDays.length === 0}
+          >
+            스케줄 삭제
+          </Button>
+          <Button
+            className="flex-1"
+            onClick={applySchedule}
+            disabled={!selectedStaff || selectedDays.length === 0}
+          >
+            스케줄 적용
+          </Button>
+        </div>
+      </div>
+    </Modal>
+  );
+};
+
 // 매출 입력 모달 (개선됨)
 const SalesInputModal = ({ isOpen, onClose, onSubmit, menu }) => {
   const [items, setItems] = useState([]);
@@ -601,11 +735,11 @@ const SalesInputModal = ({ isOpen, onClose, onSubmit, menu }) => {
                       {[5, 10].map(n => (
                         <button
                           key={n}
-                          onClick={() => updateQty(item.id, n)}
+                          onClick={() => updateQty(item.id, item.qty + n)}
                           className="px-2 h-9 rounded text-xs"
                           style={{ backgroundColor: '#1e293b', border: '1px solid #334155', color: '#94a3b8' }}
                         >
-                          {n}
+                          +{n}
                         </button>
                       ))}
                     </div>
@@ -1698,9 +1832,10 @@ function Dashboard() {
 
         {/* 근무 스케줄 달력 */}
         <div className="bg-slate-800/50 backdrop-blur border border-slate-700/50 rounded-xl p-6">
-          <div className="flex items-center justify-between mb-4">
+          <div className="flex items-center justify-between mb-4 flex-wrap gap-2">
             <h3 className="text-lg font-semibold text-white">근무 스케줄</h3>
             <div className="flex items-center gap-2">
+              <Button variant="secondary" icon={Calendar} onClick={() => setShowModal('bulk-schedule')}>일괄 설정</Button>
               <button
                 onClick={() => {
                   const prev = new Date(year, month - 1, 1);
@@ -1827,6 +1962,19 @@ function Dashboard() {
               })}
             </div>
           </Modal>
+        )}
+
+        {/* 일괄 스케줄 설정 모달 */}
+        {showModal === 'bulk-schedule' && (
+          <BulkScheduleModal
+            isOpen={true}
+            onClose={() => setShowModal(null)}
+            staff={safeStaff}
+            scheduleData={safeSchedule}
+            setScheduleData={setScheduleData}
+            year={year}
+            month={month}
+          />
         )}
       </div>
     );
