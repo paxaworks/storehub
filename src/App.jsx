@@ -13,6 +13,7 @@ import {
 } from 'lucide-react';
 import { AuthProvider, useAuth } from './contexts/AuthContext';
 import AuthPage from './components/AuthPage';
+import BusinessTypeSelect from './components/BusinessTypeSelect';
 import { useStoreData } from './hooks/useFirestore';
 
 // ========== 유틸리티 ==========
@@ -98,46 +99,11 @@ const generateSalesData = () => {
   return data;
 };
 
-// 상품 데이터 (메뉴 + 재고 통합)
-// - 판매용 상품: price(판매가), cost(원가), quantity(재고), minStock(최소재고)
-// - 재료(원자재): isIngredient: true, 판매 안 함, 다른 상품에 연결 가능
-const defaultProducts = [
-  // 판매 상품
-  { id: 1, name: '아메리카노', category: '커피', price: 4500, cost: 800, quantity: 999, minStock: 0, unit: '잔', sales: 2840, ingredients: [] },
-  { id: 2, name: '카페라떼', category: '커피', price: 5000, cost: 1200, quantity: 999, minStock: 0, unit: '잔', sales: 1920, ingredients: [] },
-  { id: 3, name: '바닐라라떼', category: '커피', price: 5500, cost: 1400, quantity: 999, minStock: 0, unit: '잔', sales: 1280, ingredients: [] },
-  { id: 4, name: '아이스티', category: '음료', price: 4000, cost: 600, quantity: 999, minStock: 0, unit: '잔', sales: 960, ingredients: [] },
-  { id: 5, name: '녹차라떼', category: '음료', price: 5500, cost: 1300, quantity: 999, minStock: 0, unit: '잔', sales: 720, ingredients: [] },
-  { id: 6, name: '크로와상', category: '베이커리', price: 4000, cost: 1800, quantity: 50, minStock: 10, unit: '개', sales: 480, ingredients: [] },
-  { id: 7, name: '치즈케이크', category: '디저트', price: 6500, cost: 2800, quantity: 30, minStock: 5, unit: '개', sales: 320, ingredients: [] },
-  // 재료 (원자재) - isIngredient: true
-  { id: 101, name: '에티오피아 예가체프', category: '원두', price: 28000, cost: 28000, quantity: 15, minStock: 5, unit: 'kg', isIngredient: true },
-  { id: 102, name: '콜롬비아 수프리모', category: '원두', price: 24000, cost: 24000, quantity: 8, minStock: 5, unit: 'kg', isIngredient: true },
-  { id: 103, name: '서울우유 1L', category: '유제품', price: 2800, cost: 2800, quantity: 18, minStock: 30, unit: '개', isIngredient: true },
-  { id: 104, name: '오트밀크', category: '유제품', price: 4500, cost: 4500, quantity: 12, minStock: 10, unit: '개', isIngredient: true },
-  { id: 105, name: '바닐라시럽', category: '시럽', price: 12000, cost: 12000, quantity: 6, minStock: 4, unit: '병', isIngredient: true },
-  { id: 106, name: '테이크아웃컵 16oz', category: '포장재', price: 120, cost: 120, quantity: 450, minStock: 200, unit: '개', isIngredient: true },
-];
-
-const defaultStaff = [
-  { id: 1, name: '김민수', role: '매니저', phone: '010-1234-5678', salary: 3200000, status: 'active', color: '#6366f1' },
-  { id: 2, name: '이서연', role: '바리스타', phone: '010-2345-6789', salary: 2400000, status: 'active', color: '#10b981' },
-  { id: 3, name: '박준영', role: '바리스타', phone: '010-3456-7890', salary: 2400000, status: 'active', color: '#f59e0b' },
-  { id: 4, name: '최유진', role: '파트타임', phone: '010-4567-8901', salary: 1200000, status: 'active', color: '#ec4899' },
-];
-
-const defaultReservations = [
-  { id: 1, name: '김철수', phone: '010-1111-2222', date: '2026-01-18', time: '14:00', people: 4, status: 'confirmed', note: '창가석 요청' },
-  { id: 2, name: '이영희', phone: '010-3333-4444', date: '2026-01-18', time: '15:30', people: 2, status: 'pending', note: '' },
-  { id: 3, name: '박민수', phone: '010-5555-6666', date: '2026-01-19', time: '11:00', people: 6, status: 'confirmed', note: '생일파티' },
-];
-
-const defaultCustomers = [
-  { id: 1, name: '김VIP', phone: '010-1234-0001', visits: 89, totalSpent: 1240000, tier: 'VIP', lastVisit: '2026-01-17' },
-  { id: 2, name: '이골드', phone: '010-1234-0002', visits: 45, totalSpent: 680000, tier: 'Gold', lastVisit: '2026-01-16' },
-  { id: 3, name: '박실버', phone: '010-1234-0003', visits: 23, totalSpent: 320000, tier: 'Silver', lastVisit: '2026-01-15' },
-  { id: 4, name: '최일반', phone: '010-1234-0004', visits: 8, totalSpent: 95000, tier: 'Bronze', lastVisit: '2026-01-14' },
-];
+// 기본 데이터 (Firebase에서 업종별 데이터를 가져오므로 빈 배열로 시작)
+const defaultProducts = [];
+const defaultStaff = [];
+const defaultReservations = [];
+const defaultCustomers = [];
 
 // ========== 컴포넌트 ==========
 const StatCard = ({ title, value, change, icon: Icon, trend, color, subtitle, onClick }) => (
@@ -2806,13 +2772,24 @@ function Dashboard() {
 
 // ========== 앱 래퍼 ==========
 function AppContent() {
-  const { currentUser, loading } = useAuth();
+  const { currentUser, userProfile, loading } = useAuth();
 
   if (loading) {
     return <LoadingScreen />;
   }
 
-  return currentUser ? <Dashboard /> : <AuthPage />;
+  // 로그인 안 됨
+  if (!currentUser) {
+    return <AuthPage />;
+  }
+
+  // 로그인은 됐지만 업종 선택 안 됨
+  if (!userProfile?.businessType) {
+    return <BusinessTypeSelect />;
+  }
+
+  // 모두 완료 → 대시보드
+  return <Dashboard />;
 }
 
 export default function App() {

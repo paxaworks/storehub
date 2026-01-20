@@ -29,54 +29,120 @@ export function AuthProvider({ children }) {
     // 프로필 업데이트
     await updateProfile(user, { displayName: ownerName });
 
-    // Firestore에 사용자 정보 저장
-    await setDoc(doc(db, 'users', user.uid), {
+    // Firestore에 사용자 정보 저장 (businessType은 나중에 선택)
+    const profile = {
       email,
       storeName,
       ownerName,
+      businessType: null, // 업종 선택 전
       createdAt: new Date().toISOString(),
-      plan: 'free', // free, basic, premium
+      plan: 'free',
       settings: {
         theme: 'dark',
         currency: 'KRW',
         language: 'ko'
       }
-    });
+    };
 
-    // 기본 데이터 컬렉션 초기화
-    await initializeStoreData(user.uid);
+    await setDoc(doc(db, 'users', user.uid), profile);
+    setUserProfile(profile);
 
     return user;
   }
 
+  // 업종 선택 및 데이터 초기화
+  async function selectBusinessType(businessType) {
+    if (!currentUser) return;
+
+    // 사용자 프로필에 업종 저장
+    const userRef = doc(db, 'users', currentUser.uid);
+    await setDoc(userRef, { businessType }, { merge: true });
+
+    // 업종에 맞는 데이터 초기화
+    await initializeStoreData(currentUser.uid, businessType);
+
+    // 프로필 업데이트
+    setUserProfile(prev => ({ ...prev, businessType }));
+  }
+
+  // 업종별 템플릿 데이터
+  const businessTemplates = {
+    cafe: {
+      products: [
+        { id: 1, name: '아메리카노', category: '커피', price: 4500, cost: 800, quantity: 999, minStock: 0, unit: '잔', sales: 0, ingredients: [] },
+        { id: 2, name: '카페라떼', category: '커피', price: 5000, cost: 1200, quantity: 999, minStock: 0, unit: '잔', sales: 0, ingredients: [] },
+        { id: 3, name: '바닐라라떼', category: '커피', price: 5500, cost: 1400, quantity: 999, minStock: 0, unit: '잔', sales: 0, ingredients: [] },
+        { id: 4, name: '아이스티', category: '음료', price: 4000, cost: 600, quantity: 999, minStock: 0, unit: '잔', sales: 0, ingredients: [] },
+        { id: 5, name: '크로와상', category: '베이커리', price: 4000, cost: 1800, quantity: 999, minStock: 0, unit: '개', sales: 0, ingredients: [] },
+        { id: 101, name: '원두 (에티오피아)', category: '원자재', price: 28000, cost: 28000, quantity: 10, minStock: 5, unit: 'kg', isIngredient: true },
+        { id: 102, name: '우유', category: '원자재', price: 2800, cost: 2800, quantity: 20, minStock: 10, unit: '개', isIngredient: true },
+      ],
+      staff: [
+        { id: 1, name: '홍길동', role: '매니저', phone: '010-1234-5678', salary: 3200000, status: 'active' },
+        { id: 2, name: '김바리', role: '바리스타', phone: '010-2345-6789', salary: 2400000, status: 'active' },
+      ]
+    },
+    restaurant: {
+      products: [
+        { id: 1, name: '김치찌개', category: '메인', price: 9000, cost: 3500, quantity: 999, minStock: 0, unit: '인분', sales: 0, ingredients: [] },
+        { id: 2, name: '된장찌개', category: '메인', price: 8000, cost: 3000, quantity: 999, minStock: 0, unit: '인분', sales: 0, ingredients: [] },
+        { id: 3, name: '제육볶음', category: '메인', price: 10000, cost: 4000, quantity: 999, minStock: 0, unit: '인분', sales: 0, ingredients: [] },
+        { id: 4, name: '공기밥', category: '사이드', price: 1000, cost: 300, quantity: 999, minStock: 0, unit: '공기', sales: 0, ingredients: [] },
+        { id: 5, name: '계란말이', category: '사이드', price: 5000, cost: 1500, quantity: 999, minStock: 0, unit: '개', sales: 0, ingredients: [] },
+        { id: 101, name: '돼지고기', category: '원자재', price: 15000, cost: 15000, quantity: 20, minStock: 5, unit: 'kg', isIngredient: true },
+        { id: 102, name: '쌀', category: '원자재', price: 50000, cost: 50000, quantity: 10, minStock: 3, unit: '포', isIngredient: true },
+      ],
+      staff: [
+        { id: 1, name: '박주방', role: '주방장', phone: '010-1234-5678', salary: 3500000, status: 'active' },
+        { id: 2, name: '이서빙', role: '홀서빙', phone: '010-2345-6789', salary: 2200000, status: 'active' },
+      ]
+    },
+    retail: {
+      products: [
+        { id: 1, name: '티셔츠 (화이트)', category: '의류', price: 29000, cost: 12000, quantity: 50, minStock: 10, unit: '개', sales: 0, ingredients: [] },
+        { id: 2, name: '청바지', category: '의류', price: 59000, cost: 25000, quantity: 30, minStock: 5, unit: '개', sales: 0, ingredients: [] },
+        { id: 3, name: '운동화', category: '신발', price: 89000, cost: 40000, quantity: 20, minStock: 5, unit: '켤레', sales: 0, ingredients: [] },
+        { id: 4, name: '모자', category: '액세서리', price: 25000, cost: 8000, quantity: 40, minStock: 10, unit: '개', sales: 0, ingredients: [] },
+        { id: 5, name: '가방', category: '액세서리', price: 45000, cost: 18000, quantity: 15, minStock: 3, unit: '개', sales: 0, ingredients: [] },
+      ],
+      staff: [
+        { id: 1, name: '최매니저', role: '매니저', phone: '010-1234-5678', salary: 2800000, status: 'active' },
+        { id: 2, name: '정판매', role: '판매원', phone: '010-2345-6789', salary: 2200000, status: 'active' },
+      ]
+    },
+    salon: {
+      products: [
+        { id: 1, name: '커트 (남성)', category: '커트', price: 18000, cost: 2000, quantity: 999, minStock: 0, unit: '회', sales: 0, ingredients: [] },
+        { id: 2, name: '커트 (여성)', category: '커트', price: 25000, cost: 3000, quantity: 999, minStock: 0, unit: '회', sales: 0, ingredients: [] },
+        { id: 3, name: '염색', category: '염색/펌', price: 80000, cost: 20000, quantity: 999, minStock: 0, unit: '회', sales: 0, ingredients: [] },
+        { id: 4, name: '펌', category: '염색/펌', price: 100000, cost: 25000, quantity: 999, minStock: 0, unit: '회', sales: 0, ingredients: [] },
+        { id: 5, name: '클리닉', category: '케어', price: 30000, cost: 8000, quantity: 999, minStock: 0, unit: '회', sales: 0, ingredients: [] },
+        { id: 101, name: '염색약', category: '원자재', price: 15000, cost: 15000, quantity: 30, minStock: 10, unit: '개', isIngredient: true },
+        { id: 102, name: '펌약', category: '원자재', price: 20000, cost: 20000, quantity: 20, minStock: 5, unit: '개', isIngredient: true },
+      ],
+      staff: [
+        { id: 1, name: '김원장', role: '원장', phone: '010-1234-5678', salary: 4000000, status: 'active' },
+        { id: 2, name: '이디자이너', role: '디자이너', phone: '010-2345-6789', salary: 2800000, status: 'active' },
+      ]
+    },
+    empty: {
+      products: [],
+      staff: []
+    }
+  };
+
   // 매장 기본 데이터 초기화
-  async function initializeStoreData(userId) {
+  async function initializeStoreData(userId, businessType = 'empty') {
     const storeRef = doc(db, 'stores', userId);
-
-    // 기본 샘플 데이터
-    const defaultMenu = [
-      { id: '1', name: '아메리카노', category: '커피', price: 4500, cost: 800, sales: 0 },
-      { id: '2', name: '카페라떼', category: '커피', price: 5000, cost: 1200, sales: 0 },
-      { id: '3', name: '바닐라라떼', category: '커피', price: 5500, cost: 1400, sales: 0 },
-      { id: '4', name: '아이스티', category: '음료', price: 4000, cost: 600, sales: 0 },
-      { id: '5', name: '녹차라떼', category: '음료', price: 5500, cost: 1300, sales: 0 },
-      { id: '6', name: '크로와상', category: '베이커리', price: 4000, cost: 1800, sales: 0 },
-      { id: '7', name: '치즈케이크', category: '베이커리', price: 6500, cost: 2800, sales: 0 },
-    ];
-
-    const defaultInventory = [
-      { id: '1', name: '원두 (에티오피아)', category: '원두', quantity: 10, minStock: 5, unit: 'kg', price: 28000 },
-      { id: '2', name: '우유', category: '유제품', quantity: 20, minStock: 10, unit: '개', price: 2800 },
-      { id: '3', name: '테이크아웃컵', category: '포장재', quantity: 500, minStock: 200, unit: '개', price: 120 },
-    ];
+    const template = businessTemplates[businessType] || businessTemplates.empty;
 
     await setDoc(storeRef, {
-      inventory: defaultInventory,
-      menu: defaultMenu,
-      staff: [],
+      products: template.products,
+      staff: template.staff,
       customers: [],
       reservations: [],
       salesData: [],
+      schedules: {},
       createdAt: new Date().toISOString()
     });
   }
@@ -129,6 +195,7 @@ export function AuthProvider({ children }) {
     logout,
     resetPassword,
     loadUserProfile,
+    selectBusinessType,
     loading
   };
 
