@@ -98,15 +98,25 @@ const generateSalesData = () => {
   return data;
 };
 
-const defaultInventory = [
-  { id: 1, name: '에티오피아 예가체프', category: '원두', quantity: 15, minStock: 5, unit: 'kg', price: 28000 },
-  { id: 2, name: '콜롬비아 수프리모', category: '원두', quantity: 8, minStock: 5, unit: 'kg', price: 24000 },
-  { id: 3, name: '서울우유 1L', category: '유제품', quantity: 18, minStock: 30, unit: '개', price: 2800 },
-  { id: 4, name: '오트밀크', category: '유제품', quantity: 12, minStock: 10, unit: '개', price: 4500 },
-  { id: 5, name: '바닐라시럽', category: '시럽', quantity: 6, minStock: 4, unit: '병', price: 12000 },
-  { id: 6, name: '카라멜시럽', category: '시럽', quantity: 5, minStock: 4, unit: '병', price: 12000 },
-  { id: 7, name: '테이크아웃컵 16oz', category: '포장재', quantity: 450, minStock: 200, unit: '개', price: 120 },
-  { id: 8, name: '종이빨대', category: '포장재', quantity: 800, minStock: 300, unit: '개', price: 50 },
+// 상품 데이터 (메뉴 + 재고 통합)
+// - 판매용 상품: price(판매가), cost(원가), quantity(재고), minStock(최소재고)
+// - 재료(원자재): isIngredient: true, 판매 안 함, 다른 상품에 연결 가능
+const defaultProducts = [
+  // 판매 상품
+  { id: 1, name: '아메리카노', category: '커피', price: 4500, cost: 800, quantity: 999, minStock: 0, unit: '잔', sales: 2840, ingredients: [] },
+  { id: 2, name: '카페라떼', category: '커피', price: 5000, cost: 1200, quantity: 999, minStock: 0, unit: '잔', sales: 1920, ingredients: [] },
+  { id: 3, name: '바닐라라떼', category: '커피', price: 5500, cost: 1400, quantity: 999, minStock: 0, unit: '잔', sales: 1280, ingredients: [] },
+  { id: 4, name: '아이스티', category: '음료', price: 4000, cost: 600, quantity: 999, minStock: 0, unit: '잔', sales: 960, ingredients: [] },
+  { id: 5, name: '녹차라떼', category: '음료', price: 5500, cost: 1300, quantity: 999, minStock: 0, unit: '잔', sales: 720, ingredients: [] },
+  { id: 6, name: '크로와상', category: '베이커리', price: 4000, cost: 1800, quantity: 50, minStock: 10, unit: '개', sales: 480, ingredients: [] },
+  { id: 7, name: '치즈케이크', category: '디저트', price: 6500, cost: 2800, quantity: 30, minStock: 5, unit: '개', sales: 320, ingredients: [] },
+  // 재료 (원자재) - isIngredient: true
+  { id: 101, name: '에티오피아 예가체프', category: '원두', price: 28000, cost: 28000, quantity: 15, minStock: 5, unit: 'kg', isIngredient: true },
+  { id: 102, name: '콜롬비아 수프리모', category: '원두', price: 24000, cost: 24000, quantity: 8, minStock: 5, unit: 'kg', isIngredient: true },
+  { id: 103, name: '서울우유 1L', category: '유제품', price: 2800, cost: 2800, quantity: 18, minStock: 30, unit: '개', isIngredient: true },
+  { id: 104, name: '오트밀크', category: '유제품', price: 4500, cost: 4500, quantity: 12, minStock: 10, unit: '개', isIngredient: true },
+  { id: 105, name: '바닐라시럽', category: '시럽', price: 12000, cost: 12000, quantity: 6, minStock: 4, unit: '병', isIngredient: true },
+  { id: 106, name: '테이크아웃컵 16oz', category: '포장재', price: 120, cost: 120, quantity: 450, minStock: 200, unit: '개', isIngredient: true },
 ];
 
 const defaultStaff = [
@@ -114,16 +124,6 @@ const defaultStaff = [
   { id: 2, name: '이서연', role: '바리스타', phone: '010-2345-6789', salary: 2400000, status: 'active', color: '#10b981' },
   { id: 3, name: '박준영', role: '바리스타', phone: '010-3456-7890', salary: 2400000, status: 'active', color: '#f59e0b' },
   { id: 4, name: '최유진', role: '파트타임', phone: '010-4567-8901', salary: 1200000, status: 'active', color: '#ec4899' },
-];
-
-const defaultMenu = [
-  { id: 1, name: '아메리카노', category: '커피', price: 4500, cost: 800, sales: 2840 },
-  { id: 2, name: '카페라떼', category: '커피', price: 5000, cost: 1200, sales: 1920 },
-  { id: 3, name: '바닐라라떼', category: '커피', price: 5500, cost: 1400, sales: 1280 },
-  { id: 4, name: '아이스티', category: '음료', price: 4000, cost: 600, sales: 960 },
-  { id: 5, name: '녹차라떼', category: '음료', price: 5500, cost: 1300, sales: 720 },
-  { id: 6, name: '크로와상', category: '베이커리', price: 4000, cost: 1800, sales: 480 },
-  { id: 7, name: '치즈케이크', category: '베이커리', price: 6500, cost: 2800, sales: 320 },
 ];
 
 const defaultReservations = [
@@ -453,11 +453,13 @@ const BulkScheduleModal = ({ isOpen, onClose, staff, scheduleData, setScheduleDa
   );
 };
 
-// 메뉴 추가/수정 모달 (재고 연결 기능 포함)
-const MenuModal = ({ isOpen, onClose, onSubmit, editItem, inventory }) => {
+// 상품 추가/수정 모달 (통합)
+const ProductModal = ({ isOpen, onClose, onSubmit, editItem, ingredientProducts }) => {
+  const [isIngredient, setIsIngredient] = useState(editItem?.isIngredient || false);
   const [ingredients, setIngredients] = useState(editItem?.ingredients || []);
 
   useEffect(() => {
+    setIsIngredient(editItem?.isIngredient || false);
     setIngredients(editItem?.ingredients || []);
   }, [editItem]);
 
@@ -478,73 +480,86 @@ const MenuModal = ({ isOpen, onClose, onSubmit, editItem, inventory }) => {
   const handleSubmit = (e) => {
     e.preventDefault();
     const f = new FormData(e.target);
-    // 유효한 재료만 필터링 (재고가 선택된 것만)
     const validIngredients = ingredients.filter(ing => ing.inventoryId && ing.amount > 0);
     onSubmit({
       name: f.get('name'),
       category: f.get('category'),
-      price: Math.round(Number(f.get('price'))),
+      price: isIngredient ? Math.round(Number(f.get('cost'))) : Math.round(Number(f.get('price'))),
       cost: Math.round(Number(f.get('cost'))),
-      ingredients: validIngredients
+      quantity: Number(Number(f.get('quantity')).toFixed(2)),
+      minStock: Number(Number(f.get('minStock')).toFixed(2)),
+      unit: f.get('unit'),
+      isIngredient,
+      ingredients: isIngredient ? [] : validIngredients
     });
   };
 
   if (!isOpen) return null;
 
-  const safeInventory = Array.isArray(inventory) ? inventory : [];
+  const safeIngredients = Array.isArray(ingredientProducts) ? ingredientProducts : [];
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} title={editItem ? '메뉴 수정' : '메뉴 추가'}>
+    <Modal isOpen={isOpen} onClose={onClose} title={editItem ? '상품 수정' : '상품 추가'}>
       <form onSubmit={handleSubmit} className="space-y-4">
-        <Input name="name" label="메뉴명" defaultValue={editItem?.name} required />
-        <SelectWithCustom name="category" label="카테고리" defaultValue={editItem?.category || '커피'} options={[{ value: '커피', label: '커피' }, { value: '음료', label: '음료' }, { value: '베이커리', label: '베이커리' }, { value: '디저트', label: '디저트' }]} placeholder="카테고리 입력..." />
-        <div className="grid grid-cols-2 gap-4">
-          <Input name="price" label="판매가" type="number" step="1" defaultValue={editItem?.price ? Math.round(editItem.price) : 0} required />
-          <Input name="cost" label="원가" type="number" step="1" defaultValue={editItem?.cost ? Math.round(editItem.cost) : 0} required />
+        {/* 상품 유형 선택 */}
+        <div>
+          <label className="block text-sm text-slate-400 mb-2">상품 유형</label>
+          <div className="flex gap-2">
+            <button type="button" onClick={() => setIsIngredient(false)} className={`flex-1 py-2 rounded-lg text-sm font-medium transition ${!isIngredient ? 'bg-indigo-500 text-white' : 'bg-slate-800 text-slate-400'}`}>
+              판매 상품
+            </button>
+            <button type="button" onClick={() => setIsIngredient(true)} className={`flex-1 py-2 rounded-lg text-sm font-medium transition ${isIngredient ? 'bg-indigo-500 text-white' : 'bg-slate-800 text-slate-400'}`}>
+              재료 (원자재)
+            </button>
+          </div>
         </div>
 
-        {/* 재고 연결 */}
-        <div>
-          <div className="flex items-center justify-between mb-2">
-            <label className="block text-sm text-slate-400">재고 연결 (판매 시 자동 차감)</label>
-            <button type="button" onClick={addIngredient} className="text-xs text-indigo-400 hover:text-indigo-300">+ 재고 추가</button>
-          </div>
-          {ingredients.length === 0 ? (
-            <p className="text-slate-500 text-sm py-3 text-center bg-slate-900/50 rounded-lg">연결된 재고가 없습니다</p>
-          ) : (
-            <div className="space-y-2">
-              {ingredients.map((ing, idx) => {
-                const selectedInv = safeInventory.find(inv => inv.id === ing.inventoryId);
-                return (
-                  <div key={idx} className="flex items-center gap-2 p-2 bg-slate-900/50 rounded-lg">
-                    <select
-                      value={ing.inventoryId}
-                      onChange={(e) => updateIngredient(idx, 'inventoryId', e.target.value)}
-                      className="flex-1 bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-white text-sm"
-                    >
-                      <option value="">재고 선택</option>
-                      {safeInventory.map(inv => (
-                        <option key={inv.id} value={inv.id}>{inv.name} ({inv.quantity}{inv.unit})</option>
-                      ))}
-                    </select>
-                    <input
-                      type="number"
-                      value={ing.amount}
-                      onChange={(e) => updateIngredient(idx, 'amount', e.target.value)}
-                      className="w-20 bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-white text-sm text-center"
-                      min="0.01"
-                      step="0.01"
-                    />
-                    <span className="text-slate-400 text-sm w-8">{selectedInv?.unit || ''}</span>
-                    <button type="button" onClick={() => removeIngredient(idx)} className="text-red-400 hover:text-red-300 p-1">
-                      <X className="w-4 h-4" />
-                    </button>
-                  </div>
-                );
-              })}
-            </div>
-          )}
+        <Input name="name" label="상품명" defaultValue={editItem?.name} required />
+        <SelectWithCustom name="category" label="카테고리" defaultValue={editItem?.category || (isIngredient ? '원두' : '커피')} options={isIngredient ? [{ value: '원두', label: '원두' }, { value: '유제품', label: '유제품' }, { value: '시럽', label: '시럽' }, { value: '포장재', label: '포장재' }] : [{ value: '커피', label: '커피' }, { value: '음료', label: '음료' }, { value: '베이커리', label: '베이커리' }, { value: '디저트', label: '디저트' }]} placeholder="카테고리 입력..." />
+
+        <div className="grid grid-cols-2 gap-4">
+          {!isIngredient && <Input name="price" label="판매가" type="number" step="1" defaultValue={editItem?.price ? Math.round(editItem.price) : 0} required />}
+          <Input name="cost" label={isIngredient ? '단가' : '원가'} type="number" step="1" defaultValue={editItem?.cost ? Math.round(editItem.cost) : 0} required />
         </div>
+
+        <div className="grid grid-cols-3 gap-4">
+          <Input name="quantity" label="재고 수량" type="number" step="0.01" defaultValue={editItem?.quantity ? Number(editItem.quantity.toFixed(2)) : 0} required />
+          <Input name="minStock" label="최소 재고" type="number" step="0.01" defaultValue={editItem?.minStock ? Number(editItem.minStock.toFixed(2)) : 0} />
+          <Input name="unit" label="단위" defaultValue={editItem?.unit || (isIngredient ? 'kg' : '개')} required />
+        </div>
+        <p className="text-slate-500 text-xs">최소 재고를 0으로 설정하면 재고 관리 안 함 (무제한)</p>
+
+        {/* 재료 연결 (판매 상품만) */}
+        {!isIngredient && (
+          <div>
+            <div className="flex items-center justify-between mb-2">
+              <label className="block text-sm text-slate-400">재료 연결 (선택사항)</label>
+              <button type="button" onClick={addIngredient} className="text-xs text-indigo-400 hover:text-indigo-300">+ 재료 추가</button>
+            </div>
+            {ingredients.length === 0 ? (
+              <p className="text-slate-500 text-sm py-3 text-center bg-slate-900/50 rounded-lg">연결된 재료 없음</p>
+            ) : (
+              <div className="space-y-2">
+                {ingredients.map((ing, idx) => {
+                  const selectedInv = safeIngredients.find(inv => inv.id === ing.inventoryId);
+                  return (
+                    <div key={idx} className="flex items-center gap-2 p-2 bg-slate-900/50 rounded-lg">
+                      <select value={ing.inventoryId} onChange={(e) => updateIngredient(idx, 'inventoryId', e.target.value)} className="flex-1 bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-white text-sm">
+                        <option value="">재료 선택</option>
+                        {safeIngredients.map(inv => (
+                          <option key={inv.id} value={inv.id}>{inv.name} ({inv.quantity}{inv.unit})</option>
+                        ))}
+                      </select>
+                      <input type="number" value={ing.amount} onChange={(e) => updateIngredient(idx, 'amount', e.target.value)} className="w-20 bg-slate-800 border border-slate-700 rounded-lg px-3 py-2 text-white text-sm text-center" min="0.01" step="0.01" />
+                      <span className="text-slate-400 text-sm w-8">{selectedInv?.unit || ''}</span>
+                      <button type="button" onClick={() => removeIngredient(idx)} className="text-red-400 hover:text-red-300 p-1"><X className="w-4 h-4" /></button>
+                    </div>
+                  );
+                })}
+              </div>
+            )}
+          </div>
+        )}
 
         <div className="flex gap-3 pt-4">
           <Button type="button" variant="secondary" className="flex-1" onClick={onClose}>취소</Button>
@@ -940,11 +955,15 @@ function Dashboard() {
 
   // Firestore 데이터 (실시간 동기화)
   const [salesData, setSalesData, salesStatus] = useStoreData(currentUser?.uid, 'salesData', generateSalesData());
-  const [inventory, setInventory, invStatus] = useStoreData(currentUser?.uid, 'inventory', defaultInventory);
+  const [products, setProducts, prodStatus] = useStoreData(currentUser?.uid, 'products', defaultProducts);
   const [staff, setStaff, staffStatus] = useStoreData(currentUser?.uid, 'staff', defaultStaff);
-  const [menu, setMenu, menuStatus] = useStoreData(currentUser?.uid, 'menu', defaultMenu);
   const [reservations, setReservations, resStatus] = useStoreData(currentUser?.uid, 'reservations', defaultReservations);
   const [customers, setCustomers, custStatus] = useStoreData(currentUser?.uid, 'customers', defaultCustomers);
+
+  // 상품에서 판매용/재료용 분리 (편의를 위한 계산)
+  const safeProducts = Array.isArray(products) ? products : [];
+  const sellableProducts = safeProducts.filter(p => !p.isIngredient); // 판매용 상품
+  const ingredientProducts = safeProducts.filter(p => p.isIngredient); // 재료 (원자재)
 
   const [notifications, setNotifications] = useState([]);
   const [toasts, setToasts] = useState([]);
@@ -1049,7 +1068,7 @@ function Dashboard() {
     const yesterday = salesData[salesData.length - 2] || {};
     const thisMonth = salesData.slice(-30).reduce((sum, d) => sum + (d?.revenue || 0), 0);
     const lastMonth = salesData.slice(-60, -30).reduce((sum, d) => sum + (d?.revenue || 0), 0);
-    const lowStockCount = Array.isArray(inventory) ? inventory.filter(i => i.quantity <= i.minStock).length : 0;
+    const lowStockCount = safeProducts.filter(i => (i.minStock || 0) > 0 && i.quantity <= i.minStock).length;
     const todayStr = new Date().toISOString().split('T')[0];
     const todayReservations = Array.isArray(reservations) ? reservations.filter(r => r.date === todayStr).length : 0;
 
@@ -1065,18 +1084,18 @@ function Dashboard() {
       totalCustomers: Array.isArray(customers) ? customers.length : 0,
       vipCustomers: Array.isArray(customers) ? customers.filter(c => c.tier === 'VIP').length : 0,
     };
-  }, [salesData, inventory, reservations, customers]);
+  }, [salesData, safeProducts, reservations, customers]);
 
   // 카테고리별 매출 (파이차트용)
   const categoryStats = useMemo(() => {
-    if (!Array.isArray(menu)) return [];
+    if (sellableProducts.length === 0) return [];
     const cats = {};
-    menu.forEach(m => {
+    sellableProducts.forEach(m => {
       if (!cats[m.category]) cats[m.category] = 0;
       cats[m.category] += m.sales * m.price;
     });
     return Object.entries(cats).map(([name, value]) => ({ name, value }));
-  }, [menu]);
+  }, [sellableProducts]);
 
   const COLORS = ['#6366f1', '#10b981', '#f59e0b', '#ef4444', '#8b5cf6'];
 
@@ -1088,32 +1107,30 @@ function Dashboard() {
     const currentTime = now.toTimeString().slice(0, 5);
 
     // 재고 부족 알림
-    if (Array.isArray(inventory)) {
-      inventory.filter(i => i.quantity <= i.minStock).forEach(item => {
-        newNotifications.push({
-          id: `stock-${item.id}`,
-          type: 'warning',
-          category: 'inventory',
-          title: '재고 부족',
-          message: `${item.name} 재고가 부족합니다 (현재: ${item.quantity}${item.unit}, 최소: ${item.minStock}${item.unit})`,
-          action: () => setActiveTab('inventory'),
-          timestamp: now.toISOString()
-        });
+    safeProducts.filter(i => (i.minStock || 0) > 0 && i.quantity <= i.minStock).forEach(item => {
+      newNotifications.push({
+        id: `stock-${item.id}`,
+        type: 'warning',
+        category: 'products',
+        title: '재고 부족',
+        message: `${item.name} 재고가 부족합니다 (현재: ${item.quantity}${item.unit}, 최소: ${item.minStock}${item.unit})`,
+        action: () => setActiveTab('products'),
+        timestamp: now.toISOString()
       });
+    });
 
-      // 재고 주의 알림 (최소재고의 1.5배 이하)
-      inventory.filter(i => i.quantity > i.minStock && i.quantity <= i.minStock * 1.5).forEach(item => {
-        newNotifications.push({
-          id: `stock-warning-${item.id}`,
-          type: 'info',
-          category: 'inventory',
-          title: '재고 주의',
-          message: `${item.name} 재고가 곧 부족해질 수 있습니다 (${item.quantity}${item.unit})`,
-          action: () => setActiveTab('inventory'),
-          timestamp: now.toISOString()
-        });
+    // 재고 주의 알림 (최소재고의 1.5배 이하)
+    safeProducts.filter(i => (i.minStock || 0) > 0 && i.quantity > i.minStock && i.quantity <= i.minStock * 1.5).forEach(item => {
+      newNotifications.push({
+        id: `stock-warning-${item.id}`,
+        type: 'info',
+        category: 'products',
+        title: '재고 주의',
+        message: `${item.name} 재고가 곧 부족해질 수 있습니다 (${item.quantity}${item.unit})`,
+        action: () => setActiveTab('products'),
+        timestamp: now.toISOString()
       });
-    }
+    });
 
     // 예약 알림 (오늘 예약)
     if (Array.isArray(reservations)) {
@@ -1180,7 +1197,7 @@ function Dashboard() {
     }
 
     setNotifications(newNotifications);
-  }, [inventory, reservations, stats.todayRevenue]);
+  }, [safeProducts, reservations, stats.todayRevenue]);
 
   // 예약 시간 체크 (1분마다)
   useEffect(() => {
@@ -1232,48 +1249,55 @@ function Dashboard() {
       }]);
     }
 
-    // 메뉴 판매량 업데이트
-    if (Array.isArray(menu)) {
-      await setMenu(menu.map(m => {
-        const sold = sale.items.find(i => i.id === m.id);
-        return sold ? { ...m, sales: (m.sales || 0) + sold.qty } : m;
-      }));
-    }
+    // 상품 판매량 업데이트 및 재고 차감
+    const updatedProducts = [...safeProducts];
+    const lowStockItems = [];
 
-    // 재고 자동 차감 (메뉴의 ingredients 기반)
-    if (Array.isArray(inventory) && Array.isArray(menu)) {
-      const updatedInventory = [...inventory];
-      const lowStockItems = [];
+    sale.items.forEach(soldItem => {
+      const prodIdx = updatedProducts.findIndex(p => p.id === soldItem.id);
+      if (prodIdx !== -1) {
+        // 판매량 증가
+        updatedProducts[prodIdx] = {
+          ...updatedProducts[prodIdx],
+          sales: (updatedProducts[prodIdx].sales || 0) + soldItem.qty,
+          // 재고 차감 (minStock이 설정된 경우만)
+          quantity: (updatedProducts[prodIdx].minStock || 0) > 0
+            ? Math.max(0, Number((updatedProducts[prodIdx].quantity - soldItem.qty).toFixed(2)))
+            : updatedProducts[prodIdx].quantity
+        };
 
-      sale.items.forEach(soldItem => {
-        // 메뉴에서 연결된 재고(ingredients) 정보 가져오기
-        const menuItem = menu.find(m => m.id === soldItem.id);
-        if (menuItem?.ingredients && Array.isArray(menuItem.ingredients)) {
-          menuItem.ingredients.forEach(ing => {
-            const invIdx = updatedInventory.findIndex(i => i.id === ing.inventoryId);
-            if (invIdx !== -1) {
+        // 재고 부족 체크
+        if ((updatedProducts[prodIdx].minStock || 0) > 0 && updatedProducts[prodIdx].quantity <= updatedProducts[prodIdx].minStock) {
+          lowStockItems.push(updatedProducts[prodIdx]);
+        }
+
+        // 하위 재료(ingredients)도 차감
+        const product = safeProducts[prodIdx];
+        if (product.ingredients && Array.isArray(product.ingredients)) {
+          product.ingredients.forEach(ing => {
+            const ingIdx = updatedProducts.findIndex(p => p.id === ing.inventoryId);
+            if (ingIdx !== -1) {
               const deductAmount = ing.amount * soldItem.qty;
-              updatedInventory[invIdx] = {
-                ...updatedInventory[invIdx],
-                quantity: Math.max(0, Number((updatedInventory[invIdx].quantity - deductAmount).toFixed(2)))
+              updatedProducts[ingIdx] = {
+                ...updatedProducts[ingIdx],
+                quantity: Math.max(0, Number((updatedProducts[ingIdx].quantity - deductAmount).toFixed(2)))
               };
-              // 재고 부족 체크
-              if (updatedInventory[invIdx].quantity <= updatedInventory[invIdx].minStock) {
-                lowStockItems.push(updatedInventory[invIdx]);
+              if ((updatedProducts[ingIdx].minStock || 0) > 0 && updatedProducts[ingIdx].quantity <= updatedProducts[ingIdx].minStock) {
+                lowStockItems.push(updatedProducts[ingIdx]);
               }
             }
           });
         }
-      });
+      }
+    });
 
-      await setInventory(updatedInventory);
+    await setProducts(updatedProducts);
 
-      // 재고 부족 알림 (중복 제거)
-      const uniqueLowStock = [...new Map(lowStockItems.map(item => [item.id, item])).values()];
-      uniqueLowStock.forEach(item => {
-        addToast(`${item.name} 재고 부족! (${Number(item.quantity.toFixed(2))}${item.unit})`, 'warning');
-      });
-    }
+    // 재고 부족 알림 (중복 제거)
+    const uniqueLowStock = [...new Map(lowStockItems.map(item => [item.id, item])).values()];
+    uniqueLowStock.forEach(item => {
+      addToast(`${item.name} 재고 부족! (${Number(item.quantity.toFixed(2))}${item.unit})`, 'warning');
+    });
 
     // 결제 완료 토스트
     addToast(`${formatNumber(sale.total)}원 결제 완료`, 'success');
@@ -1313,7 +1337,7 @@ function Dashboard() {
       <h3>인기 메뉴 TOP 5</h3>
       <table>
         <tr><th>순위</th><th>메뉴</th><th>판매량</th><th>매출</th></tr>
-        ${Array.isArray(menu) ? menu.sort((a,b) => b.sales - a.sales).slice(0,5).map((m,i) => `
+        ${Array.isArray(sellableProducts) ? [...sellableProducts].sort((a,b) => b.sales - a.sales).slice(0,5).map((m,i) => `
           <tr><td>${i+1}</td><td>${m.name}</td><td>${m.sales}건</td><td>${formatNumber(m.sales * m.price)}원</td></tr>
         `).join('') : ''}
       </table>
@@ -1389,7 +1413,7 @@ function Dashboard() {
         <StatCard title="오늘 매출" value={`${formatCurrency(stats.todayRevenue)}원`} change={Math.abs(stats.revenueChange)} trend={stats.revenueChange >= 0 ? 'up' : 'down'} icon={DollarSign} color="gradient-primary" subtitle="전일 대비" />
         <StatCard title="오늘 주문" value={`${stats.todayOrders}건`} icon={ShoppingCart} color="gradient-success" subtitle={`방문 ${stats.todayVisitors}명`} />
         <StatCard title="오늘 예약" value={`${stats.todayReservations}건`} icon={Calendar} color="gradient-warning" subtitle="대기중인 예약" onClick={() => setActiveTab('reservations')} />
-        <StatCard title="재고 알림" value={`${stats.lowStockCount}건`} icon={Package} color={stats.lowStockCount > 0 ? 'gradient-danger' : 'bg-slate-600'} subtitle="부족 품목" onClick={() => setActiveTab('inventory')} />
+        <StatCard title="재고 알림" value={`${stats.lowStockCount}건`} icon={Package} color={stats.lowStockCount > 0 ? 'gradient-danger' : 'bg-slate-600'} subtitle="부족 품목" onClick={() => setActiveTab('products')} />
       </div>
 
       {/* 차트 */}
@@ -1462,7 +1486,7 @@ function Dashboard() {
         <div className="bg-slate-800/50 backdrop-blur border border-slate-700/50 rounded-xl p-6">
           <h3 className="text-lg font-semibold text-white mb-4">인기 메뉴 TOP 5</h3>
           <div className="space-y-3">
-            {Array.isArray(menu) && [...menu].sort((a, b) => b.sales - a.sales).slice(0, 5).map((item, i) => (
+            {sellableProducts.length > 0 && [...sellableProducts].sort((a, b) => b.sales - a.sales).slice(0, 5).map((item, i) => (
               <div key={item.id} className="flex items-center gap-3">
                 <span className={`w-6 h-6 rounded-full flex items-center justify-center text-xs font-bold ${i === 0 ? 'bg-yellow-500 text-black' : i === 1 ? 'bg-slate-400 text-black' : i === 2 ? 'bg-orange-600 text-white' : 'bg-slate-700 text-slate-300'}`}>{i + 1}</span>
                 <div className="flex-1">
@@ -1604,7 +1628,7 @@ function Dashboard() {
 
   const renderSales = () => {
     const safeSalesData = Array.isArray(salesData) ? salesData : [];
-    const safeMenu = Array.isArray(menu) ? menu : [];
+    const safeMenu = sellableProducts;
 
     // 기간별 데이터 계산
     const today = safeSalesData[safeSalesData.length - 1] || { revenue: 0, cost: 0, profit: 0, orders: 0 };
@@ -1800,69 +1824,113 @@ function Dashboard() {
     );
   };
 
-  const renderInventory = () => (
-    <div className="space-y-6 fade-in">
-      <div className="flex items-center justify-between flex-wrap gap-4">
-        <div>
-          <h2 className="text-2xl font-bold text-white">재고 관리</h2>
-          <p className="text-slate-400">재고 현황 및 발주 관리</p>
-        </div>
-        <div className="flex gap-2">
-          <Button variant="secondary" icon={Download} onClick={() => exportToCSV(Array.isArray(inventory) ? inventory : [], 'inventory')}>엑셀 다운로드</Button>
-          <Button icon={Plus} onClick={() => { setEditItem(null); setShowModal('inventory'); }}>재고 추가</Button>
-        </div>
-      </div>
+  const [productFilter, setProductFilter] = useState('all'); // all, sellable, ingredient
 
-      <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
-        <StatCard title="전체 품목" value={`${Array.isArray(inventory) ? inventory.length : 0}개`} icon={Package} color="gradient-primary" />
-        <StatCard title="재고 부족" value={`${stats.lowStockCount}개`} icon={AlertTriangle} color={stats.lowStockCount > 0 ? 'gradient-danger' : 'bg-slate-600'} />
-        <StatCard title="원두 종류" value={`${Array.isArray(inventory) ? inventory.filter(i => i.category === '원두').length : 0}개`} icon={Coffee} color="gradient-warning" />
-        <StatCard title="총 재고가치" value={`${formatCurrency(Array.isArray(inventory) ? inventory.reduce((s,i) => s + i.quantity * i.price, 0) : 0)}원`} icon={Wallet} color="gradient-success" />
-      </div>
+  const renderProducts = () => {
+    const filteredProducts = safeProducts.filter(p => {
+      const matchesSearch = p.name.toLowerCase().includes(searchTerm.toLowerCase());
+      const matchesFilter = productFilter === 'all' ||
+        (productFilter === 'sellable' && !p.isIngredient) ||
+        (productFilter === 'ingredient' && p.isIngredient);
+      return matchesSearch && matchesFilter;
+    });
 
-      <div className="bg-slate-800/50 backdrop-blur border border-slate-700/50 rounded-xl p-6">
-        <div className="flex items-center gap-4 mb-4">
-          <div className="flex-1 relative">
-            <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-500" />
-            <input type="text" placeholder="재고 검색..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} className="w-full bg-slate-900/50 border border-slate-700 rounded-lg pl-10 pr-4 py-2.5 text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500" />
+    return (
+      <div className="space-y-6 fade-in">
+        <div className="flex items-center justify-between flex-wrap gap-4">
+          <div>
+            <h2 className="text-2xl font-bold text-white">상품 관리</h2>
+            <p className="text-slate-400">판매 상품 및 재료 통합 관리</p>
+          </div>
+          <div className="flex gap-2">
+            <Button variant="secondary" icon={Download} onClick={() => exportToCSV(safeProducts, 'products')}>엑셀 다운로드</Button>
+            <Button icon={Plus} onClick={() => { setEditItem(null); setShowModal('product'); }}>상품 추가</Button>
           </div>
         </div>
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead>
-              <tr className="border-b border-slate-700">
-                <th className="text-left py-3 px-4 text-slate-400 font-medium">품목</th>
-                <th className="text-left py-3 px-4 text-slate-400 font-medium">카테고리</th>
-                <th className="text-right py-3 px-4 text-slate-400 font-medium">수량</th>
-                <th className="text-right py-3 px-4 text-slate-400 font-medium">최소재고</th>
-                <th className="text-right py-3 px-4 text-slate-400 font-medium">단가</th>
-                <th className="text-center py-3 px-4 text-slate-400 font-medium">상태</th>
-                <th className="text-center py-3 px-4 text-slate-400 font-medium">관리</th>
-              </tr>
-            </thead>
-            <tbody>
-              {Array.isArray(inventory) && inventory.filter(i => i.name.toLowerCase().includes(searchTerm.toLowerCase())).map(item => (
-                <tr key={item.id} className="border-b border-slate-700/50 hover:bg-slate-700/20">
-                  <td className="py-3 px-4 text-white font-medium">{item.name}</td>
-                  <td className="py-3 px-4 text-slate-400">{item.category}</td>
-                  <td className="py-3 px-4 text-right text-white">{Number(item.quantity.toFixed(2))}{item.unit}</td>
-                  <td className="py-3 px-4 text-right text-slate-400">{item.minStock}{item.unit}</td>
-                  <td className="py-3 px-4 text-right text-slate-300">{formatNumber(item.price)}원</td>
-                  <td className="py-3 px-4 text-center"><Badge variant={item.quantity <= item.minStock ? 'danger' : item.quantity <= item.minStock * 1.5 ? 'warning' : 'success'}>{item.quantity <= item.minStock ? '부족' : item.quantity <= item.minStock * 1.5 ? '주의' : '정상'}</Badge></td>
-                  <td className="py-3 px-4 text-center">
-                    <div className="flex items-center justify-center gap-2">
-                      <button onClick={() => { setEditItem(item); setShowModal('inventory'); }} className="p-1.5 hover:bg-slate-700 rounded-lg"><Edit3 className="w-4 h-4 text-slate-400" /></button>
-                      <button onClick={() => setInventory(inventory.filter(i => i.id !== item.id))} className="p-1.5 hover:bg-red-500/20 rounded-lg"><Trash2 className="w-4 h-4 text-red-400" /></button>
-                    </div>
-                  </td>
+
+        <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
+          <StatCard title="전체 상품" value={`${safeProducts.length}개`} icon={Package} color="gradient-primary" />
+          <StatCard title="판매 상품" value={`${sellableProducts.length}개`} icon={ShoppingCart} color="gradient-info" />
+          <StatCard title="재고 부족" value={`${stats.lowStockCount}개`} icon={AlertTriangle} color={stats.lowStockCount > 0 ? 'gradient-danger' : 'bg-slate-600'} />
+          <StatCard title="총 재고가치" value={`${formatCurrency(safeProducts.reduce((s,i) => s + (i.quantity || 0) * (i.cost || 0), 0))}원`} icon={Wallet} color="gradient-success" />
+        </div>
+
+        {/* 필터 탭 */}
+        <div className="flex gap-2">
+          {[
+            { id: 'all', label: '전체' },
+            { id: 'sellable', label: '판매 상품' },
+            { id: 'ingredient', label: '재료 (원자재)' },
+          ].map(filter => (
+            <button
+              key={filter.id}
+              onClick={() => setProductFilter(filter.id)}
+              className={`px-4 py-2 rounded-lg text-sm font-medium transition ${productFilter === filter.id ? 'bg-indigo-500 text-white' : 'bg-slate-800 text-slate-400 hover:bg-slate-700'}`}
+            >
+              {filter.label}
+            </button>
+          ))}
+        </div>
+
+        <div className="bg-slate-800/50 backdrop-blur border border-slate-700/50 rounded-xl p-6">
+          <div className="flex items-center gap-4 mb-4">
+            <div className="flex-1 relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 w-5 h-5 text-slate-500" />
+              <input type="text" placeholder="상품 검색..." value={searchTerm} onChange={e => setSearchTerm(e.target.value)} className="w-full bg-slate-900/50 border border-slate-700 rounded-lg pl-10 pr-4 py-2.5 text-white placeholder-slate-500 focus:outline-none focus:border-indigo-500" />
+            </div>
+          </div>
+          <div className="overflow-x-auto">
+            <table className="w-full">
+              <thead>
+                <tr className="border-b border-slate-700">
+                  <th className="text-left py-3 px-4 text-slate-400 font-medium">상품명</th>
+                  <th className="text-left py-3 px-4 text-slate-400 font-medium">카테고리</th>
+                  <th className="text-right py-3 px-4 text-slate-400 font-medium">판매가</th>
+                  <th className="text-right py-3 px-4 text-slate-400 font-medium">원가</th>
+                  <th className="text-right py-3 px-4 text-slate-400 font-medium">재고</th>
+                  <th className="text-center py-3 px-4 text-slate-400 font-medium">상태</th>
+                  <th className="text-center py-3 px-4 text-slate-400 font-medium">관리</th>
                 </tr>
-              ))}
-            </tbody>
-          </table>
+              </thead>
+              <tbody>
+                {filteredProducts.map(item => (
+                  <tr key={item.id} className="border-b border-slate-700/50 hover:bg-slate-700/20">
+                    <td className="py-3 px-4">
+                      <div className="flex items-center gap-2">
+                        <span className="text-white font-medium">{item.name}</span>
+                        {item.isIngredient && <Badge variant="secondary">재료</Badge>}
+                      </div>
+                    </td>
+                    <td className="py-3 px-4 text-slate-400">{item.category}</td>
+                    <td className="py-3 px-4 text-right text-white">{item.isIngredient ? '-' : `${formatNumber(item.price)}원`}</td>
+                    <td className="py-3 px-4 text-right text-slate-400">{formatNumber(item.cost)}원</td>
+                    <td className="py-3 px-4 text-right text-white">{Number((item.quantity || 0).toFixed(2))}{item.unit}</td>
+                    <td className="py-3 px-4 text-center">
+                      <Badge variant={
+                        (item.minStock || 0) === 0 ? 'secondary' :
+                        item.quantity <= item.minStock ? 'danger' :
+                        item.quantity <= item.minStock * 1.5 ? 'warning' : 'success'
+                      }>
+                        {(item.minStock || 0) === 0 ? '무제한' :
+                         item.quantity <= item.minStock ? '부족' :
+                         item.quantity <= item.minStock * 1.5 ? '주의' : '정상'}
+                      </Badge>
+                    </td>
+                    <td className="py-3 px-4 text-center">
+                      <div className="flex items-center justify-center gap-2">
+                        <button onClick={() => { setEditItem(item); setShowModal('product'); }} className="p-1.5 hover:bg-slate-700 rounded-lg"><Edit3 className="w-4 h-4 text-slate-400" /></button>
+                        <button onClick={() => setProducts(safeProducts.filter(i => i.id !== item.id))} className="p-1.5 hover:bg-red-500/20 rounded-lg"><Trash2 className="w-4 h-4 text-red-400" /></button>
+                      </div>
+                    </td>
+                  </tr>
+                ))}
+              </tbody>
+            </table>
+          </div>
         </div>
       </div>
-    </div>
-  );
+    );
+  };
 
   const renderStaff = () => {
     const safeStaff = Array.isArray(staff) ? staff : [];
@@ -2246,70 +2314,6 @@ function Dashboard() {
     );
   };
 
-  const renderMenu = () => (
-    <div className="space-y-6 fade-in">
-      <div className="flex items-center justify-between flex-wrap gap-4">
-        <div>
-          <h2 className="text-2xl font-bold text-white">메뉴 관리</h2>
-          <p className="text-slate-400">메뉴 및 가격 관리</p>
-        </div>
-        <div className="flex gap-2">
-          <Button variant="secondary" icon={Download} onClick={() => exportToCSV(Array.isArray(menu) ? menu : [], 'menu')}>엑셀 다운로드</Button>
-          <Button icon={Plus} onClick={() => { setEditItem(null); setShowModal('menu'); }}>메뉴 추가</Button>
-        </div>
-      </div>
-
-      <div className="grid grid-cols-1 sm:grid-cols-4 gap-4">
-        <StatCard title="전체 메뉴" value={`${Array.isArray(menu) ? menu.length : 0}개`} icon={Coffee} color="gradient-primary" />
-        <StatCard title="평균 단가" value={`${formatNumber(Array.isArray(menu) && menu.length > 0 ? Math.round(menu.reduce((s,m) => s+m.price, 0) / menu.length) : 0)}원`} icon={Receipt} color="gradient-success" />
-        <StatCard title="평균 이익률" value={`${Array.isArray(menu) && menu.length > 0 ? Math.round(menu.reduce((s,m) => s + (m.price - m.cost) / m.price * 100, 0) / menu.length) : 0}%`} icon={Percent} color="gradient-warning" />
-        <StatCard title="총 판매량" value={`${formatNumber(Array.isArray(menu) ? menu.reduce((s,m) => s + m.sales, 0) : 0)}건`} icon={ShoppingCart} color="gradient-danger" />
-      </div>
-
-      <div className="bg-slate-800/50 backdrop-blur border border-slate-700/50 rounded-xl p-6">
-        <div className="overflow-x-auto">
-          <table className="w-full">
-            <thead>
-              <tr className="border-b border-slate-700">
-                <th className="text-left py-3 px-4 text-slate-400 font-medium">메뉴명</th>
-                <th className="text-left py-3 px-4 text-slate-400 font-medium">카테고리</th>
-                <th className="text-right py-3 px-4 text-slate-400 font-medium">판매가</th>
-                <th className="text-right py-3 px-4 text-slate-400 font-medium">원가</th>
-                <th className="text-right py-3 px-4 text-slate-400 font-medium">이익</th>
-                <th className="text-center py-3 px-4 text-slate-400 font-medium">이익률</th>
-                <th className="text-right py-3 px-4 text-slate-400 font-medium">판매량</th>
-                <th className="text-center py-3 px-4 text-slate-400 font-medium">관리</th>
-              </tr>
-            </thead>
-            <tbody>
-              {Array.isArray(menu) && menu.map(m => {
-                const profit = m.price - m.cost;
-                const margin = Math.round(profit / m.price * 100);
-                return (
-                  <tr key={m.id} className="border-b border-slate-700/50 hover:bg-slate-700/20">
-                    <td className="py-3 px-4 text-white font-medium">{m.name}</td>
-                    <td className="py-3 px-4 text-slate-400">{m.category}</td>
-                    <td className="py-3 px-4 text-right text-white">{formatNumber(m.price)}원</td>
-                    <td className="py-3 px-4 text-right text-slate-400">{formatNumber(m.cost)}원</td>
-                    <td className="py-3 px-4 text-right text-emerald-400">{formatNumber(profit)}원</td>
-                    <td className="py-3 px-4 text-center"><Badge variant={margin >= 70 ? 'success' : margin >= 50 ? 'warning' : 'danger'}>{margin}%</Badge></td>
-                    <td className="py-3 px-4 text-right text-slate-300">{formatNumber(m.sales)}건</td>
-                    <td className="py-3 px-4 text-center">
-                      <div className="flex items-center justify-center gap-2">
-                        <button onClick={() => { setEditItem(m); setShowModal('menu'); }} className="p-1.5 hover:bg-slate-700 rounded-lg"><Edit3 className="w-4 h-4 text-slate-400" /></button>
-                        <button onClick={() => setMenu(menu.filter(item => item.id !== m.id))} className="p-1.5 hover:bg-red-500/20 rounded-lg"><Trash2 className="w-4 h-4 text-red-400" /></button>
-                      </div>
-                    </td>
-                  </tr>
-                );
-              })}
-            </tbody>
-          </table>
-        </div>
-      </div>
-    </div>
-  );
-
   const renderCustomers = () => (
     <div className="space-y-6 fade-in">
       <div className="flex items-center justify-between flex-wrap gap-4">
@@ -2442,7 +2446,7 @@ function Dashboard() {
             </div>
             <div className="space-y-3">
               <Button variant="secondary" icon={Download} className="w-full" onClick={() => {
-                const data = { salesData, inventory, staff, menu, reservations, customers };
+                const data = { salesData, products, staff, reservations, customers };
                 const blob = new Blob([JSON.stringify(data, null, 2)], { type: 'application/json' });
                 const url = URL.createObjectURL(blob);
                 const a = document.createElement('a');
@@ -2505,19 +2509,24 @@ function Dashboard() {
 
   // 폼 제출 핸들러
   const handleFormSubmit = async (type, data) => {
-    const list = type === 'inventory' ? inventory : type === 'staff' ? staff : type === 'menu' ? menu : type === 'reservation' ? reservations : customers;
-    const safeList = Array.isArray(list) ? list : [];
-    const newId = Math.max(0, ...safeList.map(i => i.id || 0)) + 1;
-
-    if (type === 'inventory') {
-      editItem ? await setInventory(safeList.map(i => i.id === editItem.id ? {...i, ...data} : i)) : await setInventory([...safeList, { id: newId, ...data }]);
+    if (type === 'product') {
+      const newId = Math.max(0, ...safeProducts.map(i => i.id || 0)) + 1;
+      if (editItem) {
+        await setProducts(safeProducts.map(p => p.id === editItem.id ? {...p, ...data} : p));
+      } else {
+        await setProducts([...safeProducts, { id: newId, ...data, sales: 0 }]);
+      }
     } else if (type === 'staff') {
+      const safeList = Array.isArray(staff) ? staff : [];
+      const newId = Math.max(0, ...safeList.map(i => i.id || 0)) + 1;
       editItem ? await setStaff(safeList.map(s => s.id === editItem.id ? {...s, ...data} : s)) : await setStaff([...safeList, { id: newId, ...data, color: `#${Math.floor(Math.random()*16777215).toString(16)}` }]);
-    } else if (type === 'menu') {
-      editItem ? await setMenu(safeList.map(m => m.id === editItem.id ? {...m, ...data} : m)) : await setMenu([...safeList, { id: newId, ...data, sales: 0 }]);
     } else if (type === 'reservation') {
+      const safeList = Array.isArray(reservations) ? reservations : [];
+      const newId = Math.max(0, ...safeList.map(i => i.id || 0)) + 1;
       editItem ? await setReservations(safeList.map(r => r.id === editItem.id ? {...r, ...data} : r)) : await setReservations([...safeList, { id: newId, ...data }]);
     } else if (type === 'customer') {
+      const safeList = Array.isArray(customers) ? customers : [];
+      const newId = Math.max(0, ...safeList.map(i => i.id || 0)) + 1;
       editItem ? await setCustomers(safeList.map(c => c.id === editItem.id ? {...c, ...data} : c)) : await setCustomers([...safeList, { id: newId, ...data }]);
     }
     setShowModal(null);
@@ -2527,10 +2536,9 @@ function Dashboard() {
   const tabs = [
     { id: 'dashboard', label: '대시보드', icon: LayoutDashboard },
     { id: 'sales', label: '매출관리', icon: BarChart2 },
-    { id: 'inventory', label: '재고관리', icon: Package },
+    { id: 'products', label: '상품관리', icon: Package },
     { id: 'staff', label: '직원관리', icon: Users },
     { id: 'reservations', label: '예약관리', icon: Calendar },
-    { id: 'menu', label: '메뉴관리', icon: Coffee },
     { id: 'customers', label: '고객관리', icon: UserCheck },
     { id: 'settings', label: '설정', icon: Settings },
   ];
@@ -2571,7 +2579,7 @@ function Dashboard() {
         </div>
         <nav className="p-4 space-y-1">
           {tabs.map(tab => (
-            <SidebarItem key={tab.id} icon={tab.icon} label={tab.label} active={activeTab === tab.id} onClick={() => { setActiveTab(tab.id); setSidebarOpen(false); }} badge={tab.id === 'inventory' ? stats.lowStockCount : 0} />
+            <SidebarItem key={tab.id} icon={tab.icon} label={tab.label} active={activeTab === tab.id} onClick={() => { setActiveTab(tab.id); setSidebarOpen(false); }} badge={tab.id === 'products' ? stats.lowStockCount : 0} />
           ))}
         </nav>
         <div className="absolute bottom-0 left-0 right-0 p-4 border-t border-slate-800">
@@ -2608,37 +2616,25 @@ function Dashboard() {
 
           {activeTab === 'dashboard' && renderDashboard()}
           {activeTab === 'sales' && renderSales()}
-          {activeTab === 'inventory' && renderInventory()}
+          {activeTab === 'products' && renderProducts()}
           {activeTab === 'staff' && renderStaff()}
           {activeTab === 'reservations' && renderReservations()}
-          {activeTab === 'menu' && renderMenu()}
           {activeTab === 'customers' && renderCustomers()}
           {activeTab === 'settings' && renderSettings()}
         </div>
       </main>
 
       {/* 매출 입력 모달 */}
-      <SalesInputModal isOpen={showSalesInput} onClose={() => setShowSalesInput(false)} onSubmit={handleSalesInput} menu={Array.isArray(menu) ? menu : []} />
+      <SalesInputModal isOpen={showSalesInput} onClose={() => setShowSalesInput(false)} onSubmit={handleSalesInput} menu={sellableProducts} />
 
-      {/* 모달들 */}
-      <Modal isOpen={showModal === 'inventory'} onClose={() => { setShowModal(null); setEditItem(null); }} title={editItem ? '재고 수정' : '재고 추가'}>
-        <form onSubmit={e => { e.preventDefault(); const f = new FormData(e.target); handleFormSubmit('inventory', { name: f.get('name'), category: f.get('category'), quantity: Number(Number(f.get('quantity')).toFixed(2)), minStock: Number(Number(f.get('minStock')).toFixed(2)), unit: f.get('unit'), price: Math.round(Number(f.get('price'))) }); }} className="space-y-4">
-          <Input name="name" label="품목명" defaultValue={editItem?.name} required />
-          <SelectWithCustom name="category" label="카테고리" defaultValue={editItem?.category || '원두'} options={[{ value: '원두', label: '원두' }, { value: '유제품', label: '유제품' }, { value: '시럽', label: '시럽' }, { value: '포장재', label: '포장재' }]} placeholder="카테고리 입력..." />
-          <div className="grid grid-cols-2 gap-4">
-            <Input name="quantity" label="수량" type="number" step="0.01" defaultValue={editItem?.quantity ? Number(editItem.quantity.toFixed(2)) : 0} required />
-            <Input name="unit" label="단위" defaultValue={editItem?.unit || '개'} required />
-          </div>
-          <div className="grid grid-cols-2 gap-4">
-            <Input name="minStock" label="최소재고" type="number" step="0.01" defaultValue={editItem?.minStock ? Number(editItem.minStock.toFixed(2)) : 0} required />
-            <Input name="price" label="단가" type="number" step="1" defaultValue={editItem?.price ? Math.round(editItem.price) : 0} required />
-          </div>
-          <div className="flex gap-3 pt-4">
-            <Button type="button" variant="secondary" className="flex-1" onClick={() => { setShowModal(null); setEditItem(null); }}>취소</Button>
-            <Button type="submit" className="flex-1">{editItem ? '수정' : '추가'}</Button>
-          </div>
-        </form>
-      </Modal>
+      {/* 상품 모달 */}
+      <ProductModal
+        isOpen={showModal === 'product'}
+        onClose={() => { setShowModal(null); setEditItem(null); }}
+        onSubmit={(data) => handleFormSubmit('product', data)}
+        editItem={editItem}
+        ingredientProducts={ingredientProducts}
+      />
 
       <Modal isOpen={showModal === 'staff'} onClose={() => { setShowModal(null); setEditItem(null); }} title={editItem ? '직원 수정' : '직원 추가'}>
         <form onSubmit={e => { e.preventDefault(); const f = new FormData(e.target); handleFormSubmit('staff', { name: f.get('name'), role: f.get('role'), phone: f.get('phone'), salary: Math.round(Number(f.get('salary'))), status: f.get('status') }); }} className="space-y-4">
@@ -2654,14 +2650,7 @@ function Dashboard() {
         </form>
       </Modal>
 
-      <MenuModal
-        isOpen={showModal === 'menu'}
-        onClose={() => { setShowModal(null); setEditItem(null); }}
-        onSubmit={(data) => handleFormSubmit('menu', data)}
-        editItem={editItem}
-        inventory={inventory}
-      />
-
+      
       <Modal isOpen={showModal === 'reservation'} onClose={() => { setShowModal(null); setEditItem(null); }} title={editItem ? '예약 수정' : '예약 추가'}>
         <form onSubmit={e => { e.preventDefault(); const f = new FormData(e.target); handleFormSubmit('reservation', { name: f.get('name'), phone: f.get('phone'), date: f.get('date'), time: f.get('time'), people: Math.round(Number(f.get('people'))), status: f.get('status'), note: f.get('note') }); }} className="space-y-4">
           <Input name="name" label="예약자명" defaultValue={editItem?.name} required />
@@ -2705,9 +2694,9 @@ function Dashboard() {
           {[
             { id: 'dashboard', icon: LayoutDashboard, label: '홈' },
             { id: 'sales', icon: BarChart2, label: '매출' },
-            { id: 'inventory', icon: Package, label: '재고' },
+            { id: 'products', icon: Package, label: '상품' },
             { id: 'staff', icon: Users, label: '직원' },
-            { id: 'menu', icon: Coffee, label: '메뉴' },
+            { id: 'reservations', icon: Calendar, label: '예약' },
           ].map(item => (
             <button
               key={item.id}
@@ -2716,7 +2705,7 @@ function Dashboard() {
             >
               <item.icon className="w-5 h-5 mb-1" />
               <span className="text-xs">{item.label}</span>
-              {item.id === 'inventory' && stats.lowStockCount > 0 && (
+              {item.id === 'products' && stats.lowStockCount > 0 && (
                 <span className="absolute top-2 right-1/2 translate-x-3 w-2 h-2 bg-red-500 rounded-full" />
               )}
             </button>
